@@ -64,7 +64,7 @@ def add_asset():
     print(f"✅ Registered: {asset_id}")
 
 def receive_shipment():
-    """Manually receive units from China shipment."""
+    """Manually receive units and update inventory levels."""
     print("\n[ COMMAND: RECEIVE SHIPMENT ]")
     target_id = input("Enter Asset ID: ").upper()
     updated_rows = []
@@ -118,6 +118,9 @@ def main_menu():
         elif choice == '4':
             if os.path.exists(LOG_FILE):
                 with open(LOG_FILE, 'r') as f:
+                    # Print headers
+                    print(f"{'Timestamp':<20} | {'ID':<10} | {'Action':<15} | {'Details'}")
+                    print("-" * 70)
                     for line in f.readlines()[-10:]: print(line.strip())
         elif choice == '5': break
 
