@@ -36,49 +36,60 @@ import csv
     
     def update_status():
         print("\n[ COMMAND: UPDATE ASSET STATUS ]")
-        target_id = input("Enter Asset ID to update (e.g., M-ABCD): ").upper()
+        target_id = input("Enter Asset ID to update: ").upper()
         updated_rows = []
         found = False
-        
         if not os.path.exists(INV_FILE):
             print("No inventory found.")
             return
-    
         with open(INV_FILE, mode='r') as file:
             reader = csv.DictReader(file)
             fieldnames = reader.fieldnames
             for row in reader:
                 if row['ID'] == target_id:
                     found = True
-                    print(f"Current Status: {row['Status']} | Current Location: {row['Location']}")
-                    new_status = input("New Status (Available/Rented/In-Shop): ")
-                    new_location = input("New Location (e.g., Jobsite A, Yard): ")
+                    print(f"Current: {row['Status']} at {row['Location']}")
+                    print("Options: Available, Pending Sale, Sold")
+                    new_status = input("New Status: ")
+                    new_loc = input("New Location: ")
                     row['Status'] = new_status if new_status else row['Status']
-                    row['Location'] = new_location if new_location else row['Location']
+                    row['Location'] = new_loc if new_loc else row['Location']
                 updated_rows.append(row)
-    
         if found:
             with open(INV_FILE, mode='w', newline='') as file:
                 writer = csv.DictWriter(file, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(updated_rows)
-            print(f"✅ SUCCESS: {target_id} has been updated.")
+            print("✅ Status Updated.")
         else:
-            print("ID not found in system.")
+            print("ID not found.")
+    
+    def view_inventory_report():
+        print("\n[ COMMAND: FULL FLEET REPORT ]")
+        if not os.path.exists(INV_FILE):
+            print("No assets found.")
+            return
+        with open(INV_FILE, mode='r') as file:
+            reader = csv.DictReader(file)
+            print(f"{'ID':<8} | {'TYPE':<15} | {'MODEL':<15} | {'STATUS':<15} | {'LOCATION':<15}")
+            print("-" * 75)
+            for row in reader:
+                print(f"{row['ID']:<8} | {row['Type']:<15} | {row['Model']:<15} | {row['Status']:<15} | {row['Location']:<15}")
     
     def main_menu():
         initialize_inventory()
         while True:
             print("\n--- BULL EQUIPMENT INVENTORY ---")
-            print("1. Add Asset (Machine/Attachment)")
+            print("1. Add Asset")
             print("2. Update Asset Status")
-            print("3. Search Inventory")
+            print("3. View Fleet Report")
             print("4. Exit")
-            choice = input("Select Option: ")
+            choice = input("Select: ")
             if choice == '1': add_asset()
             elif choice == '2': update_status()
+            elif choice == '3': view_inventory_report()
             elif choice == '4': break
     
-    if __name__ == "__main__":
+    if __name__ == '__main__':
         main_menu()
     
