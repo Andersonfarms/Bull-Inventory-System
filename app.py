@@ -47,7 +47,7 @@ with tab1:
         st.write(" ") 
         if st.button("Update Inventory", use_container_width=True):
             # Find the machine data
-            idx = df.index[df['ID'] == selected_id].tolist()[0]
+            idx = df.index[df['ID'] == selected_id].tolist()
             item_model = df.at[idx, 'Model']
             
             # Update Status
