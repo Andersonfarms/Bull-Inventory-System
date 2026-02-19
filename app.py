@@ -46,21 +46,15 @@ with tab1:
     with col4:
         st.write(" ") 
         if st.button("Update Inventory", use_container_width=True):
-            # Find the machine data
-            idx = df.index[df['ID'] == selected_id].tolist()
-            item_model = df.at[idx, 'Model']
-            
-            # Update Status
-     if st.button("Update Inventory", use_container_width=True):
-            # 1. First, find all matches for the selected VIN
+            # 1. Locate the specific row
             idx_list = df.index[df['ID'] == selected_id].tolist()
             
-            # 2. SAFETY LOCK: Only proceed if exactly one match is found
+            # 2. Safety Check: Only 1 row should match
             if len(idx_list) == 1:
-                idx = idx_list[0] # Get the specific row index
-                item_model = df.at[idx, 'Model'] # Now look up the model safely
+                idx = idx_list[0]
+                item_model = df.at[idx, 'Model']
                 
-                # 3. Update Status and Quantity
+                # 3. Apply changes
                 if action == "Sale":
                     df.at[idx, 'Qty_On_Hand'] = 0
                     df.at[idx, 'Status'] = "Sold"
@@ -69,10 +63,10 @@ with tab1:
                 elif action == "Repair Complete":
                     df.at[idx, 'Status'] = "Available"
                 
-                # 4. Save to Inventory File
+                # 4. Save updates
                 df.to_csv(INV_FILE, index=False)
                 
-                # 5. Log the activity
+                # 5. Log the record
                 log_entry = pd.DataFrame([{
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "ID": selected_id,
@@ -87,13 +81,9 @@ with tab1:
                     log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
                 
                 st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
-                
-                try:
-                    st.rerun()
-                except AttributeError:
-                    st.experimental_rerun()
+                st.rerun()
             else:
-                st.error("Error: Could not locate a unique record for this ID. Please check the inventory file.")  
+                st.error("Error: Could not locate a unique record for this ID.")
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
@@ -119,7 +109,6 @@ with tab3:
     st.subheader("🕒 Recent Activity")
     if os.path.exists(LOG_FILE):
         try:
-            # Added 'on_bad_lines' to handle the ParserError automatically
             log_df = pd.read_csv(LOG_FILE, on_bad_lines='skip')
             display_columns = ['Timestamp', 'ID', 'Model', 'Action', 'User']
             existing_cols = [c for c in display_columns if c in log_df.columns]
@@ -128,7 +117,7 @@ with tab3:
             else:
                 st.info("No valid history found yet.")
         except Exception as e:
-            st.error("The activity log file is corrupted due to the format change.")
+            st.error("The activity log file is corrupted.")
             if st.button("Reset Activity Log"):
                 os.remove(LOG_FILE)
                 st.rerun()
