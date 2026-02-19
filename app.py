@@ -69,4 +69,25 @@ if os.path.exists(INV_FILE):
             st.table(logs.tail(10))
 
 else:
+
     st.error("No inventory file found. Please run inventory.py first to create the data.")
+
+# --- TRANSACTION SECTION ---
+st.sidebar.header("Log a Sale or Repair")
+selected_id = st.sidebar.selectbox("Select Item ID", df['ID'].unique())
+action = st.sidebar.radio("Action", ["Sale", "Maintenance/Repair"])
+quantity = st.sidebar.number_input("Quantity", min_value=1, value=1)
+
+if st.sidebar.button("Update Inventory"):
+    # Find the row and update the quantity
+    idx = df.index[df['ID'] == selected_id].tolist()[0]
+    if df.at[idx, 'Qty_On_Hand'] >= quantity:
+        df.at[idx, 'Qty_On_Hand'] -= quantity
+        
+        # Save back to the CSV
+        df.to_csv('bull_inventory.csv', index=False)
+        
+        st.sidebar.success(f"Updated {selected_id}! Remaining: {df.at[idx, 'Qty_On_Hand']}")
+        st.rerun() # Refresh the dashboard
+    else:
+        st.sidebar.error("Not enough stock on hand!")
