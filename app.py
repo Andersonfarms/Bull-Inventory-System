@@ -12,6 +12,7 @@ st.title("🏗️ Anderson Farms Bull Inventory")
 
 # --- DATA LOAD ---
 if os.path.exists(INV_FILE):
+    df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce')
     df = pd.read_csv(INV_FILE)
 else:
     st.error("Inventory file not found!")
