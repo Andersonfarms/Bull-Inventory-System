@@ -63,7 +63,7 @@ if os.path.exists(INV_FILE):
 st.subheader("All Inventory Items")
 st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_container_width=True)
 
-    with tab2:
+with tab2:
         st.subheader("Receive New Units")
         asset_to_update = st.selectbox("Select Asset to Receive", df['ID'] + " - " + df['Model'])
         id_only = asset_to_update.split(" - ")[0]
@@ -88,6 +88,7 @@ st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_conta
 else:
 
     st.error("No inventory file found. Please run inventory.py first to create the data.")
+
 
 
 
