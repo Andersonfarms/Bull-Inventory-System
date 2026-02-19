@@ -8,7 +8,7 @@ INV_FILE = "bull_inventory.csv"
 LOG_FILE = "activity_log.csv"
 
 st.set_page_config(page_title="Bull Inventory System", layout="wide")
-st.title("🏗️ Anderson Farms Bull Inventory")
+st.title("🏗️ Bull Inventory")
 
 # --- DATA LOAD ---
 if os.path.exists(INV_FILE):
