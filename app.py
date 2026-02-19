@@ -81,7 +81,10 @@ with tab1:
                     log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
                 
                 st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
+                try:
                 st.rerun()
+                except AttributeError:
+                st.experimental_rerun()st.rerun()
             else:
                 st.error("Error: Could not locate a unique record for this ID.")
 
