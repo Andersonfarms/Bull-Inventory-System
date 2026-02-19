@@ -1,11 +1,4 @@
 ID,Category,Type,Model,Serial_Number,Status,Location,Qty_On_Hand,Qty_On_Order,Reorder_Level
-A-CMHD,Attachment,Misc,18X,N/A,Available,Warehouse,27,0,5
-A-FU8Y,Attachment,Misc,25X,N/A,Available,Warehouse,4,0,5
-A-AMSW,Attachment,Misc,22X,N/A,Available,Warehouse,4,0,5
-A-IU4K,Attachment,Misc,40X,N/A,Available,Warehouse,1,0,5
-A-FKFA,Attachment,Misc,1100X,N/A,Available,Warehouse,5,0,5
-A-W6N9,Attachment,Misc,1200X,N/A,Available,Warehouse,1,0,5
-A-WC5Y,Attachment,Misc,,N/A,Available,Warehouse,done,0,5
 A-IHZH,Attachment,Initial Load,Rake 19,N/A,Available,Warehouse,14,0,2
 A-VPOZ,Attachment,Initial Load,Rake 23,N/A,Available,Warehouse,6,0,2
 A-9PWW,Attachment,Initial Load,Bucket 40,N/A,Available,Warehouse,21,0,2
@@ -27,3 +20,4 @@ M-3HI5,Machine,Initial Load,40X,N/A,Available,Warehouse,1,0,2
 M-DQ93,Machine,Initial Load,12X,N/A,Available,Warehouse,2,0,2
 M-B5TP,Machine,Initial Load,1100X,N/A,Available,Warehouse,5,0,2
 M-9PA1,Machine,Initial Load,1200X,N/A,Available,Warehouse,1,0,2
+
