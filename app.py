@@ -87,7 +87,8 @@ with tab3:
 
         else:
 
-    st.error("No inventory file found. Please run inventory.py first to create the data.")
+st.error("No inventory file found. Please run inventory.py first to create the data.")
+
 
 
 
