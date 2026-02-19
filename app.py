@@ -83,7 +83,7 @@ with tab1:
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
-    st.markdown("### 🚜 Machines")
+    st.markdown("### 🏗️ Machines")
     machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
     if not machines_df.empty:
         m_counts = machines_df.groupby('Model')['Qty_On_Hand'].sum()
@@ -98,3 +98,4 @@ with tab2:
         rows = [a_counts.iloc[i:i+4] for i in range(0, len(a_counts), 4)]
         for row in rows:
             cols = st.
+
