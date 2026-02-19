@@ -51,6 +51,7 @@ with tab1:
             item_model = df.at[idx, 'Model']
             
             # Update Status
+        if len(idx) == 1:
             if action == "Sale":
                 df.at[idx, 'Qty_On_Hand'] = 0
                 df.at[idx, 'Status'] = "Sold"
