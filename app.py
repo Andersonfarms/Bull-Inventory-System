@@ -47,7 +47,7 @@ with tab1:
         if st.button("Update Inventory", use_container_width=True):
             # Find the machine data
             idx = df.index[df['ID'] == selected_id].tolist()[0]
-            item_model = df.at[idx, 'Model'] # AUTO-LOOKUP MODEL
+            item_model = df.at[idx, 'Model']
             
             # Update Status
             if action == "Sale":
@@ -104,9 +104,19 @@ with tab2:
 with tab3:
     st.subheader("🕒 Recent Activity")
     if os.path.exists(LOG_FILE):
-        log_df = pd.read_csv(LOG_FILE)
-        display_columns = ['Timestamp', 'ID', 'Model', 'Action', 'User']
-        existing_cols = [c for c in display_columns if c in log_df.columns]
-        st.table(log_df[existing_cols].sort_values(by="Timestamp", ascending=False).head(20))
+        try:
+            # Added 'on_bad_lines' to handle the ParserError automatically
+            log_df = pd.read_csv(LOG_FILE, on_bad_lines='skip')
+            display_columns = ['Timestamp', 'ID', 'Model', 'Action', 'User']
+            existing_cols = [c for c in display_columns if c in log_df.columns]
+            if not log_df.empty:
+                st.table(log_df[existing_cols].sort_values(by="Timestamp", ascending=False).head(20))
+            else:
+                st.info("No valid history found yet.")
+        except Exception as e:
+            st.error("The activity log file is corrupted due to the format change.")
+            if st.button("Reset Activity Log"):
+                os.remove(LOG_FILE)
+                st.rerun()
     else:
         st.info("No transactions logged yet.")
