@@ -63,12 +63,11 @@ with tab1:
             
             # --- LOGGING WITH DESCRIPTION ---
             log_entry = pd.DataFrame([{
-    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    "ID": selected_id,
-    "Model": item_model,
-    "Action": action,
-    "User": selected_user
-}])
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "ID": selected_id,
+                "Model": item_model,
+                "Action": action,
+                "User": selected_user
             }])
             
             if not os.path.isfile(LOG_FILE):
@@ -111,4 +110,5 @@ with tab3:
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
         st.info("No transactions logged yet.")
+
 
