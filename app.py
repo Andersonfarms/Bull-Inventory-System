@@ -43,7 +43,24 @@ if os.path.exists(INV_FILE):
             st.info("No machines registered yet.")
         
         st.divider()
-        st.subheader("All Inventory Items")
+        st.
+    st.divider()
+    st.subheader("Log a Sale or Repair")
+    selected_id = st.selectbox("Select Item ID", df['ID'].unique(), key="main_select_id")
+    action = st.radio("Action", ["Sale", "Maintenance/Repair"], key="main_action")
+    quantity = st.number_input("Quantity", min_value=1, value=1, key="main_quantity")
+
+    if st.button("Update Inventory", key="main_update"):
+        idx = df.index[df['ID'] == selected_id].tolist()[0]
+        if df.at[idx, 'Qty_On_Hand'] >= quantity:
+            df.at[idx, 'Qty_On_Hand'] -= quantity
+            df.to_csv(INV_FILE, index=False)
+            st.success(f"Updated {selected_id}! Remaining: {df.at[idx, 'Qty_On_Hand']}")
+            st_autorefresh(interval=1000, limit=2, key="refresh_after_update_main") 
+        else:
+            st.error("Not enough quantity on hand.")
+# --- End of moved section
+subheader("All Inventory Items")
         st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_container_width=True)
 
     with tab2:
@@ -72,23 +89,4 @@ else:
 
     st.error("No inventory file found. Please run inventory.py first to create the data.")
 
-# --- TRANSACTION SECTION ---
-st.sidebar.header("Log a Sale or Repair")
-selected_id = st.sidebar.selectbox("Select Item ID", df['ID'].unique())
-action = st.sidebar.radio("Action", ["Sale", "Maintenance/Repair"])
-quantity = st.sidebar.number_input("Quantity", min_value=1, value=1)
-
-if st.sidebar.button("Update Inventory"):
-    # Find the row and update the quantity
-    idx = df.index[df['ID'] == selected_id].tolist()[0]
-    if df.at[idx, 'Qty_On_Hand'] >= quantity:
-        df.at[idx, 'Qty_On_Hand'] -= quantity
-        
-        # Save back to the CSV
-        df.to_csv('bull_inventory.csv', index=False)
-        
-        st.sidebar.success(f"Updated {selected_id}! Remaining: {df.at[idx, 'Qty_On_Hand']}")
-        st.rerun() # Refresh the dashboard
-    else:
-        st.sidebar.error("Not enough stock on hand!")
 
