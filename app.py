@@ -19,7 +19,7 @@ else:
     st.stop()
 
 # --- DASHBOARD TABS ---
-tab1, tab2, tab3 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity"])
+tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity", "➕ Add New Stock"])
 
 with tab1:
     st.subheader("Live Warehouse Stock")
@@ -46,20 +46,16 @@ with tab1:
     with col4:
         st.write(" ") 
         if st.button("Update Inventory", use_container_width=True):
-            # 1. Locate the specific row
             idx_list = df.index[df['ID'] == selected_id].tolist()
             
-            # 2. Safety Check: Only 1 row should match
             if len(idx_list) == 1:
                 idx = idx_list[0]
                 item_model = df.at[idx, 'Model']
                 current_qty = df.at[idx, 'Qty_On_Hand']
                 
-                # 3. Apply changes (Smart Subtract)
                 if action == "Sale":
                     if current_qty > 1:
                         df.at[idx, 'Qty_On_Hand'] = current_qty - 1
-                        # Status stays "Available" because we still have stock
                     else:
                         df.at[idx, 'Qty_On_Hand'] = 0
                         df.at[idx, 'Status'] = "Sold"
@@ -68,10 +64,8 @@ with tab1:
                 elif action == "Repair Complete":
                     df.at[idx, 'Status'] = "Available"
                 
-                # 4. Save updates
                 df.to_csv(INV_FILE, index=False)
                 
-                # 5. Log the record
                 log_entry = pd.DataFrame([{
                     "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "ID": selected_id,
@@ -86,13 +80,13 @@ with tab1:
                     log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
                 
                 st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
-                
                 try:
                     st.rerun()
                 except AttributeError:
                     st.experimental_rerun()
             else:
                 st.error("Error: Could not locate a unique record for this ID.")
+
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
     st.markdown("### 🏗️ Machines")
@@ -103,8 +97,8 @@ with tab2:
         for i, (model, count) in enumerate(m_counts.items()):
             cols[i].metric(label=model, value=int(count))
     st.divider()
-    st.markdown("### 🛠️ Attachments")
-    attach_df = df[(df['Category'] == 'Attachment') & (df['Qty_On_Hand'] > 0)]
+    st.markdown("### 🛠️ Attachments & Implements")
+    attach_df = df[(df['Category'].isin(['Attachment', 'Implement'])) & (df['Qty_On_Hand'] > 0)]
     if not attach_df.empty:
         a_counts = attach_df.groupby('Model')['Qty_On_Hand'].sum()
         rows = [a_counts.iloc[i:i+4] for i in range(0, len(a_counts), 4)]
@@ -131,3 +125,49 @@ with tab3:
                 st.rerun()
     else:
         st.info("No transactions logged yet.")
+
+with tab4:
+    st.subheader("➕ Add New Inventory")
+    with st.form("new_item_form", clear_on_submit=True):
+        f_id = st.text_input("Item ID (VIN)")
+        f_cat = st.selectbox("Category", ["Machine", "Attachment", "Implement"])
+        f_model = st.text_input("Model Name (e.g., 25X, Ripper, etc.)")
+        f_loc = st.text_input("Location (Warehouse/Yard)")
+        f_qty = st.number_input("Starting Quantity", min_value=1, value=1, step=1)
+        
+        submitted = st.form_submit_button("Add to Inventory")
+        
+        if submitted:
+            if not f_id or not f_model:
+                st.error("Please provide both a VIN and a Model name.")
+            elif f_id in df['ID'].values:
+                st.error(f"Error: VIN {f_id} already exists in the system!")
+            else:
+                new_row = pd.DataFrame([{
+                    "ID": f_id,
+                    "Category": f_cat,
+                    "Model": f_model,
+                    "Status": "Available",
+                    "Location": f_loc,
+                    "Qty_On_Hand": f_qty
+                }])
+                
+                # Update Inventory File
+                updated_df = pd.concat([df, new_row], ignore_index=True)
+                updated_df.to_csv(INV_FILE, index=False)
+                
+                # Log the addition
+                log_add = pd.DataFrame([{
+                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "ID": f_id,
+                    "Model": f_model,
+                    "Action": "Added New Stock",
+                    "User": "Captain"
+                }])
+                log_add.to_csv(LOG_FILE, mode='a', header=not os.path.exists(LOG_FILE), index=False)
+                
+                st.success(f"Successfully added {f_model} ({f_id}) to stock.")
+                try:
+                    st.rerun()
+                except AttributeError:
+                    st.experimental_rerun()
