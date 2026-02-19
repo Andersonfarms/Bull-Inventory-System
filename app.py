@@ -68,14 +68,18 @@ with tab1:
                 log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
             
             st.success(f"Transaction Complete: {selected_id} updated to {action}")
-            st.rerun()
+            
+            # --- FIX FOR RERUN ERROR ---
+            try:
+                st.rerun()
+            except AttributeError:
+                st.experimental_rerun()
 
 with tab2:
     st.subheader("📈 Inventory Metrics")
     total_units = df['Qty_On_Hand'].sum()
     st.metric("Total Units in Stock", int(total_units))
     
-    # Show stock levels by model
     model_counts = df[df['Qty_On_Hand'] > 0].groupby('Model')['Qty_On_Hand'].sum()
     if not model_counts.empty:
         st.bar_chart(model_counts)
@@ -86,7 +90,6 @@ with tab3:
     st.subheader("🕒 Recent Activity")
     if os.path.exists(LOG_FILE):
         log_df = pd.read_csv(LOG_FILE)
-        # Display the log, newest first
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
         st.info("No transactions have been logged yet. Use the 'Log Transaction' tool in the first tab to start.")
