@@ -1,4 +1,11 @@
-def bulk_populate():
+import csv
+import os
+import random
+import string
+from datetime import datetime
+
+INV_FILE = "bull_inventory.csv"
+LOG_FILE = "inventory_log.csv"def bulk_populate():
     """Fast entry for initial setup of physical stock."""
     print("\n[ QUICK POPULATE: INITIAL STOCK ]")
     print("Categories: (M)achine, (A)ttachment, (P)arts")
