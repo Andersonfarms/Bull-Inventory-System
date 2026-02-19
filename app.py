@@ -29,19 +29,29 @@ with tab1:
     st.divider()
     st.header("🏗️ Log Transaction")
     
-    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    # Expanded to 5 columns for better tracking
+    col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
+    
     with col1:
         available_ids = df[df['Qty_On_Hand'] > 0]['ID'].tolist()
         selected_id = st.selectbox("Select Item ID (VIN)", options=available_ids)
+    
     with col2:
+        # Added a free-text or selection field for WHAT is being sold
+        description = st.text_input("Sale/Repair Description", placeholder="e.g. 25X Machine, Bucket, etc.")
+
+    with col3:
         user_list = ["Captain", "Fredrik L", "Bailey S", "Alain L", "Michael A"]
         selected_user = st.selectbox("Logged By", options=user_list)
-    with col3:
-        action = st.selectbox("Action", ["Sale", "Repair Start", "Repair Complete"])
+        
     with col4:
+        action = st.selectbox("Action", ["Sale", "Repair Start", "Repair Complete"])
+    
+    with col5:
         st.write(" ") 
         if st.button("Update Inventory", use_container_width=True):
             idx = df.index[df['ID'] == selected_id].tolist()[0]
+            
             if action == "Sale":
                 df.at[idx, 'Qty_On_Hand'] = 0
                 df.at[idx, 'Status'] = "Sold"
@@ -49,13 +59,25 @@ with tab1:
                 df.at[idx, 'Status'] = "In Repair"
             elif action == "Repair Complete":
                 df.at[idx, 'Status'] = "Available"
+            
             df.to_csv(INV_FILE, index=False)
-            log_entry = pd.DataFrame([{"Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "ID": selected_id, "Action": action, "User": selected_user}])
+            
+            # --- LOGGING WITH DESCRIPTION ---
+            log_entry = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "VIN": selected_id,
+                "Unit_Type": description, # Now tracking WHAT it was
+                "Action": action,
+                "User": selected_user
+            }])
+            
             if not os.path.isfile(LOG_FILE):
                 log_entry.to_csv(LOG_FILE, index=False)
             else:
                 log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
-            st.success(f"Transaction Complete: {selected_id} updated by {selected_user}")
+            
+            st.success(f"Success: {description} ({selected_id}) logged by {selected_user}")
+            
             try:
                 st.rerun()
             except AttributeError:
@@ -63,8 +85,6 @@ with tab1:
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
-    
-    # Machines Section
     st.markdown("### 🚜 Machines")
     machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
     if not machines_df.empty:
@@ -72,30 +92,22 @@ with tab2:
         cols = st.columns(len(m_counts))
         for i, (model, count) in enumerate(m_counts.items()):
             cols[i].metric(label=model, value=int(count))
-    else:
-        st.info("No machines currently in stock.")
-
     st.divider()
-
-    # Attachments Section
     st.markdown("### 🛠️ Attachments")
     attach_df = df[(df['Category'] == 'Attachment') & (df['Qty_On_Hand'] > 0)]
     if not attach_df.empty:
-        # Grouping by Model to see Bucket, Rake, Auger, etc.
         a_counts = attach_df.groupby('Model')['Qty_On_Hand'].sum()
-        # We'll use a grid of 4 columns for attachments since there are usually more of them
         rows = [a_counts.iloc[i:i+4] for i in range(0, len(a_counts), 4)]
         for row in rows:
             cols = st.columns(4)
             for i, (model, count) in enumerate(row.items()):
                 cols[i].metric(label=model, value=int(count))
-    else:
-        st.info("No attachments currently in stock.")
 
 with tab3:
     st.subheader("🕒 Recent Activity")
     if os.path.exists(LOG_FILE):
         log_df = pd.read_csv(LOG_FILE)
+        # Displaying the expanded log with the Unit_Type column
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
         st.info("No transactions logged yet.")
