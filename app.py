@@ -84,7 +84,7 @@ with tab1:
                 try:
                  st.rerun()
                 except AttributeError:
-                 st.experimental_rerun()st.rerun()
+                 st.experimental_rerun()
             else:
                 st.error("Error: Could not locate a unique record for this ID.")
 
