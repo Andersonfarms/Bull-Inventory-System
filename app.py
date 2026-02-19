@@ -14,7 +14,6 @@ st.title("🏗️ Bull Inventory")
 if os.path.exists(INV_FILE):
     df = pd.read_csv(INV_FILE)
     df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce')
-    # Ensure 'Size' column exists for older files
     if 'Size' not in df.columns:
         df['Size'] = ""
 else:
@@ -25,10 +24,19 @@ else:
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity", "➕ Add New Stock"])
 
 with tab1:
-    st.subheader("Live Warehouse Stock")
-    st.divider()
-    available_df = df[df['Qty_On_Hand'] > 0]
-    st.dataframe(available_df[['ID', 'Category', 'Model', 'Size', 'Status', 'Location', 'Qty_On_Hand']], use_container_width=True)
+    st.subheader("Live Warehouse Stock (Manual Edit Mode)")
+    st.info("💡 You can edit cells directly in the table below. Click 'Save Manual Edits' when finished.")
+    
+    # Switch from dataframe to data_editor
+    edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic", key="inventory_editor")
+    
+    if st.button("💾 Save Manual Edits"):
+        edited_df.to_csv(INV_FILE, index=False)
+        st.success("Inventory updated successfully!")
+        try:
+            st.rerun()
+        except AttributeError:
+            st.experimental_rerun()
 
     st.divider()
     st.header("🏗️ Log Transaction")
@@ -36,6 +44,7 @@ with tab1:
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     
     with col1:
+        # We use the original df for the dropdown to avoid conflicts during editing
         available_ids = df[df['Qty_On_Hand'] > 0]['ID'].tolist()
         selected_id = st.selectbox("Select Item ID (VIN)", options=available_ids)
     
