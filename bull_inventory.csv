@@ -14,12 +14,21 @@ A-M5MI,Attachment,Initial Load,25X Bucket 10,N/A,Available,Warehouse,7,0,2
 A-6PCX,Attachment,Initial Load,Stump Grinder ,N/A,Available,Warehouse,5,0,2
 A-9O8T,Attachment,Initial Load,Hedge Trimmers,N/A,Available,Warehouse,2,0,2
 M-AN9D,Machine,Initial Load,18X,N/A,Available,Warehouse,27,0,2
-M-VETS,Machine,Initial Load,22X,N/A,Available,Warehouse,4,0,2
-M-WITJ,Machine,Initial Load,25X,N/A,Available,Warehouse,4,0,2
-M-3HI5,Machine,Initial Load,40X,N/A,Available,Warehouse,1,0,2
-M-DQ93,Machine,Initial Load,12X,N/A,Available,Warehouse,2,0,2
-M-B5TP,Machine,Initial Load,1100X,N/A,Available,Warehouse,5,0,2
-M-9PA1,Machine,Initial Load,1200X,N/A,Available,Warehouse,1,0,2
-A-4DT6,Attachment,Initial Load,Flail Mower,N/A,Available,Warehouse,1,0,2
-
+20251105014,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
+20251105012,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
+20251105013,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
+20251105015,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
+20251106010,Machine,Initial Load,25X,N/A,Available,Warehouse,1,0,2
+20251106012,Machine,Initial Load,25X,N/A,Available,Warehouse,1,0,2
+20251106014,Machine,Initial Load,25X,N/A,Available,Warehouse,1,0,2
+20251106013,Machine,Initial Load,25X,N/A,Available,Warehouse,1,0,2
+20251104005,Machine,Initial Load,40X,N/A,Available,Warehouse,1,0,2
+20251024005,Machine,Initial Load,12X,N/A,Available,Warehouse,1,0,2
+20251024006,Machine,Initial Load,12X,N/A,Available,Warehouse,1,0,2
+202510012,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
+1100X-PENDING-1,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
+1100X-PENDING-2,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
+1100X-PENDING-3,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
+1100X-PENDING-4,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
+```
 
