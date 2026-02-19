@@ -4,8 +4,8 @@ import os
 from datetime import datetime
     
     # --- CONFIGURATION ---
-    INV_FILE = "bull_inventory.csv"
-    LOG_FILE = "activity_log.csv"
+INV_FILE = "bull_inventory.csv"
+LOG_FILE = "activity_log.csv"
     
     st.set_page_config(page_title="Bull Inventory System", layout="wide")
     st.title("🏗️ Anderson Farms Bull Inventory")
