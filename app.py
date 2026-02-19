@@ -61,7 +61,7 @@ if os.path.exists(INV_FILE):
             st.error("Not enough quantity on hand.")
 # --- End of moved section
 st.subheader("All Inventory Items")
-        st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_container_width=True)
+st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_container_width=True)
 
     with tab2:
         st.subheader("Receive New Units")
@@ -88,6 +88,7 @@ st.subheader("All Inventory Items")
 else:
 
     st.error("No inventory file found. Please run inventory.py first to create the data.")
+
 
 
 
