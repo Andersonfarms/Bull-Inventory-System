@@ -13,7 +13,33 @@ A-N912,Attachment,Initial Load,25x Bucket 47,N/A,Available,Warehouse,3,0,2
 A-M5MI,Attachment,Initial Load,25X Bucket 10,N/A,Available,Warehouse,7,0,2
 A-6PCX,Attachment,Initial Load,Stump Grinder ,N/A,Available,Warehouse,5,0,2
 A-9O8T,Attachment,Initial Load,Hedge Trimmers,N/A,Available,Warehouse,2,0,2
-M-AN9D,Machine,Initial Load,18X,N/A,Available,Warehouse,27,0,2
+20251208016,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208003,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208019,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208017,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208022,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208008,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208024,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208015,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208023,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208021,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208014,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208018,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208013,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208001,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208020,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208025,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208004,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208002,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208006,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208012,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208009,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208007,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208005,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208011,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208085,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208081,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
+20251208083,Machine,Initial Load,18X,N/A,Available,Warehouse,1,0,2
 20251105014,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
 20251105012,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
 20251105013,Machine,Initial Load,22X,N/A,Available,Warehouse,1,0,2
@@ -30,6 +56,7 @@ M-AN9D,Machine,Initial Load,18X,N/A,Available,Warehouse,27,0,2
 1100X-PENDING-2,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
 1100X-PENDING-3,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
 1100X-PENDING-4,Machine,Initial Load,1100X,N/A,Available,Warehouse,1,0,2
+
 
 
 
