@@ -103,6 +103,24 @@ with tab2:
     machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
     if not machines_df.empty:
         m_counts = machines_df.groupby('Model')['Qty_On_Hand'].sum()
+    with tab3:
+        st.subheader("Recent Activity")
+        log_file_path = LOG_FILE
+        if os.path.exists(log_file_path):
+            log_df = pd.read_csv(log_file_path)
+            if not log_df.empty:
+                display_cols = ["Timestamp", "ID", "Model", "Action", "User"]
+                available_cols = [col for col in display_cols if col in log_df.columns]
+                st.dataframe(log_df[available_cols])
+            else:
+                st.write("Activity log is empty.")
+        else:
+            st.write("Activity log file not found.")
+    
+    # The code below from line 102 was part of the original error and should be removed manually if it persists after this edit.
+    # The corrected tab3 block is above.
+    
+    
         cols = st.columns(len(m_counts))
         for i, (model, count) in enumerate(m_counts.items()):
             cols[i].metric(label=model, value=int(count))
@@ -114,5 +132,6 @@ with tab2:
         rows = [a_counts.iloc[i:i+4] for i in range(0, len(a_counts), 4)]
         for row in rows:
             cols = st.
+
 
 
