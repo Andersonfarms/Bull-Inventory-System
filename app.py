@@ -29,28 +29,27 @@ with tab1:
     st.divider()
     st.header("🏗️ Log Transaction")
     
-    # Expanded to 5 columns for better tracking
-    col1, col2, col3, col4, col5 = st.columns([2, 2, 1, 1, 1])
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     
     with col1:
         available_ids = df[df['Qty_On_Hand'] > 0]['ID'].tolist()
         selected_id = st.selectbox("Select Item ID (VIN)", options=available_ids)
     
     with col2:
-        description = st.text_input("Sale/Repair Description", placeholder="e.g. 25X Machine, Bucket, etc.")
-
-    with col3:
         user_list = ["Captain", "Fredrik L", "Bailey S", "Alain L", "Michael A"]
         selected_user = st.selectbox("Logged By", options=user_list)
         
-    with col4:
+    with col3:
         action = st.selectbox("Action", ["Sale", "Repair Start", "Repair Complete"])
     
-    with col5:
+    with col4:
         st.write(" ") 
         if st.button("Update Inventory", use_container_width=True):
-            idx = df.item_model = df.loc[idx, 'Model']
+            # Find the machine data
+            idx = df.index[df['ID'] == selected_id].tolist()[0]
+            item_model = df.at[idx, 'Model'] # AUTO-LOOKUP MODEL
             
+            # Update Status
             if action == "Sale":
                 df.at[idx, 'Qty_On_Hand'] = 0
                 df.at[idx, 'Status'] = "Sold"
@@ -61,7 +60,7 @@ with tab1:
             
             df.to_csv(INV_FILE, index=False)
             
-            # --- LOGGING WITH DESCRIPTION ---
+            # Log the activity with the exact Model
             log_entry = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "ID": selected_id,
@@ -75,7 +74,7 @@ with tab1:
             else:
                 log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
             
-            st.success(f"Success: {description} ({selected_id}) logged by {selected_user}")
+            st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
             
             try:
                 st.rerun()
@@ -98,17 +97,4 @@ with tab2:
         a_counts = attach_df.groupby('Model')['Qty_On_Hand'].sum()
         rows = [a_counts.iloc[i:i+4] for i in range(0, len(a_counts), 4)]
         for row in rows:
-            cols = st.columns(4)
-            for i, (model, count) in enumerate(row.items()):
-                cols[i].metric(label=model, value=int(count))
-
-with tab3:
-    st.subheader("🕒 Recent Activity")
-    if os.path.exists(LOG_FILE):
-        log_df = pd.read_csv(LOG_FILE)
-        # Displaying the expanded log with the Unit_Type column
-        st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
-    else:
-        st.info("No transactions logged yet.")
-
-
+            cols = st.
