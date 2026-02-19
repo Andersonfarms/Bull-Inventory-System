@@ -79,7 +79,7 @@ with tab2:
             st.success(f"Updated {id_only}! New Qty: {df.at[idx, 'Qty_On_Hand']}")
             st.rerun()
 
-    with tab3:
+with tab3:
         st.subheader("Recent Activity")
         if os.path.exists(LOG_FILE):
             logs = pd.read_csv(LOG_FILE)
@@ -88,6 +88,7 @@ with tab2:
 else:
 
     st.error("No inventory file found. Please run inventory.py first to create the data.")
+
 
 
 
