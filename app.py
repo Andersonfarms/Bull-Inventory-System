@@ -85,6 +85,21 @@ with tab2:
     total_units = df['Qty_On_Hand'].sum()
     st.metric("Total Units in Stock", int(total_units))
     
+    st.divider()
+    st.subheader("Stock by Category")
+    
+    # Calculate totals per Category
+    category_counts = df[df['Qty_On_Hand'] > 0].groupby('Category')['Qty_On_Hand'].sum()
+    
+    if not category_counts.empty:
+        # Create columns to display each category as a big number
+        cols = st.columns(len(category_counts))
+        for i, (category, count) in enumerate(category_counts.items()):
+            with cols[i]:
+                st.metric(label=f"Total {category}s", value=int(count))
+    else:
+        st.info("No stock currently available to show.")
+    
     model_counts = df[df['Qty_On_Hand'] > 0].groupby('Model')['Qty_On_Hand'].sum()
     if not model_counts.empty:
         st.bar_chart(model_counts)
@@ -98,3 +113,4 @@ with tab3:
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
         st.info("No transactions logged yet.")
+
