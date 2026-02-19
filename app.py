@@ -85,9 +85,10 @@ with tab3:
             logs = pd.read_csv(LOG_FILE)
             st.table(logs.tail(10))
 
-else:
+        else:
 
     st.error("No inventory file found. Please run inventory.py first to create the data.")
+
 
 
 
