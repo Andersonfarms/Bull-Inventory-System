@@ -37,7 +37,6 @@ with tab1:
         selected_id = st.selectbox("Select Item ID (VIN)", options=available_ids)
     
     with col2:
-        # Added a free-text or selection field for WHAT is being sold
         description = st.text_input("Sale/Repair Description", placeholder="e.g. 25X Machine, Bucket, etc.")
 
     with col3:
@@ -50,7 +49,7 @@ with tab1:
     with col5:
         st.write(" ") 
         if st.button("Update Inventory", use_container_width=True):
-            idx = df.index[df['ID'] == selected_id].tolist()[0]
+            idx = df.item_model = df.loc[idx, 'Model']
             
             if action == "Sale":
                 df.at[idx, 'Qty_On_Hand'] = 0
@@ -64,11 +63,12 @@ with tab1:
             
             # --- LOGGING WITH DESCRIPTION ---
             log_entry = pd.DataFrame([{
-                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "VIN": selected_id,
-                "Unit_Type": description, # Now tracking WHAT it was
-                "Action": action,
-                "User": selected_user
+    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "ID": selected_id,
+    "Model": item_model,
+    "Action": action,
+    "User": selected_user
+}])
             }])
             
             if not os.path.isfile(LOG_FILE):
@@ -111,3 +111,4 @@ with tab3:
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
         st.info("No transactions logged yet.")
+
