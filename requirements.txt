@@ -1,3 +1,4 @@
 pandas
-streamlit==1.24.0
-altair==4.2.2
+streamlit
+Pillow
+
