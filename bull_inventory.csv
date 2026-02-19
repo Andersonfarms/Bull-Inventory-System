@@ -20,5 +20,6 @@ M-3HI5,Machine,Initial Load,40X,N/A,Available,Warehouse,1,0,2
 M-DQ93,Machine,Initial Load,12X,N/A,Available,Warehouse,2,0,2
 M-B5TP,Machine,Initial Load,1100X,N/A,Available,Warehouse,5,0,2
 M-9PA1,Machine,Initial Load,1200X,N/A,Available,Warehouse,1,0,2
-A-4DT6,Attachment,Initial,Load,Flail Mower,N/A,Available,Warehouse,1,0,2
+A-4DT6,Attachment,Initial Load,Flail Mower,N/A,Available,Warehouse,1,0,2
+
 
