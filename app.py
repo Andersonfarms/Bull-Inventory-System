@@ -3,96 +3,63 @@ import pandas as pd
 import os
 from datetime import datetime
 
-# Page Config for Mobile
-st.set_page_config(page_title="Bull Inventory", layout="centered")
-
+# --- CONFIGURATION ---
 INV_FILE = "bull_inventory.csv"
-LOG_FILE = "inventory_log.csv"
+LOG_FILE = "activity_log.csv"
 
-def log_event(asset_id, action, details):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    if os.path.exists(LOG_FILE):
-        df_log = pd.read_csv(LOG_FILE)
-        new_log = pd.DataFrame([[timestamp, asset_id, action, details]], columns=df_log.columns)
-        df_log = pd.concat([df_log, new_log], ignore_index=True)
-        df_log.to_csv(LOG_FILE, index=False)
+st.set_page_config(page_title="Bull Inventory System", layout="wide")
+st.title("🏗️ Anderson Farms Bull Inventory")
 
-st.title("🏗️ Bull Equipment Inventory")
-
+# --- DATA LOAD ---
 if os.path.exists(INV_FILE):
     df = pd.read_csv(INV_FILE)
+else:
+    st.error("Inventory file not found!")
+    st.stop()
 
-    # Tabs for different views
-    tab1, tab2, tab3 = st.tabs(["📋 Fleet Status", "📥 Receive Shipment", "📜 Activity"])
+# --- DASHBOARD TABS ---
+tab1, tab2, tab3 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity"])
 
-    with tab1:
-        st.subheader("Fleet Overview")
-        
-        # This part now automatically finds ALL your models (12X, 18X, 22X, etc.)
-        machines_df = df[df['Category'] == 'Machine']
-        
-        if not machines_df.empty:
-            # Group by Model and sum the quantities
-            fleet_summary = machines_df.groupby('Model')['Qty_On_Hand'].sum()
-            
-            # Display them in nice columns
-            cols = st.columns(3)
-            for i, (model, count) in enumerate(fleet_summary.items()):
-                cols[i % 3].metric(f"Bull {model}", f"{int(count)} Units")
-        else:
-            st.info("No machines registered yet.")
-        
-        st.divider()
-        
+with tab1:
+    st.subheader("Live Warehouse Stock")
     st.divider()
-    st.subheader("Log a Sale or Repair")
-    selected_id = st.selectbox("Select Item ID", df['ID'].unique(), key="main_select_id")
-    action = st.radio("Action", ["Sale", "Maintenance/Repair"], key="main_action")
-    quantity = st.number_input("Quantity", min_value=1, value=1, key="main_quantity")
+    # Display the inventory table
+    st.dataframe(df[['ID', 'Category', 'Model', 'Status', 'Location', 'Qty_On_Hand']], use_container_width=True)
 
-    if st.button("Update Inventory", key="main_update"):
-        idx = df.index[df['ID'] == selected_id].tolist()[0]
-        if df.at[idx, 'Qty_On_Hand'] >= quantity:
-            df.at[idx, 'Qty_On_Hand'] -= quantity
+    st.divider()
+    st.header("🏗️ Log Transaction")
+    
+    # Horizontal Layout for Transactions
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        # Show only items that are currently in stock (Qty > 0)
+        available_ids = df[df['Qty_On_Hand'] > 0]['ID'].tolist()
+        selected_id = st.selectbox("Select Item ID (VIN)", options=available_ids)
+    
+    with col2:
+        action = st.selectbox("Action", ["Sale", "Repair Start", "Repair Complete"])
+    
+    with col3:
+        if st.button("Update Inventory", use_container_width=True):
+            # 1. Update the DataFrame
+            idx = df.index[df['ID'] == selected_id].tolist()[0]
+            
+            if action == "Sale":
+                df.at[idx, 'Qty_On_Hand'] = 0
+                df.at[idx, 'Status'] = "Sold"
+            elif action == "Repair Start":
+                df.at[idx, 'Status'] = "In Repair"
+            elif action == "Repair Complete":
+                df.at[idx, 'Status'] = "Available"
+            
+            # 2. Save to CSV
             df.to_csv(INV_FILE, index=False)
-            st.success(f"Updated {selected_id}! Remaining: {df.at[idx, 'Qty_On_Hand']}")
-            st_autorefresh(interval=1000, limit=2, key="refresh_after_update_main") 
-        else:
-            st.error("Not enough quantity on hand.")
-# --- End of moved section
-st.subheader("All Inventory Items")
-st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_container_width=True)
-
-with tab2:
-        st.subheader("Receive New Units")
-        asset_to_update = st.selectbox("Select Asset to Receive", df['ID'] + " - " + df['Model'])
-        id_only = asset_to_update.split(" - ")[0]
-        
-        qty_received = st.number_input("How many units arrived?", min_value=1, step=1)
-        
-        if st.button("Confirm Receipt", type="primary"):
-            idx = df[df['ID'] == id_only].index[0]
-            df.at[idx, 'Qty_On_Hand'] = int(df.at[idx, 'Qty_On_Hand']) + qty_received
-            df.at[idx, 'Qty_On_Order'] = max(0, int(df.at[idx, 'Qty_On_Order']) - qty_received)
-            df.to_csv(INV_FILE, index=False)
-            log_event(id_only, "WEB_RECEIVE", f"Received {qty_received} units via Mobile UI")
-            st.success(f"Updated {id_only}! New Qty: {df.at[idx, 'Qty_On_Hand']}")
-            st.rerun()
-
-with tab3:
-        st.subheader("Recent Activity")
-        if os.path.exists(LOG_FILE):
-            logs = pd.read_csv(LOG_FILE)
-            st.table(logs.tail(10))
-
-        else:
-
-st.error("No inventory file found. Please run inventory.py first to create the data.")
-
-
-
-
-
-
-
-
+            
+            # 3. Log the activity
+            log_entry = pd.DataFrame([{
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "ID": selected_id,
+                "Action": action,
+                "User": "Captain"
+            }])
