@@ -99,12 +99,7 @@ with tab2:
                 st.metric(label=f"Total {category}s", value=int(count))
     else:
         st.info("No stock currently available to show.")
-    
-    model_counts = df[df['Qty_On_Hand'] > 0].groupby('Model')['Qty_On_Hand'].sum()
-    if not model_counts.empty:
-        st.bar_chart(model_counts)
-    else:
-        st.info("No stock currently available to graph.")
+   
 
 with tab3:
     st.subheader("🕒 Recent Activity")
@@ -113,4 +108,5 @@ with tab3:
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
         st.info("No transactions logged yet.")
+
 
