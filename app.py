@@ -43,7 +43,7 @@ if os.path.exists(INV_FILE):
             st.info("No machines registered yet.")
         
         st.divider()
-        st.
+        
     st.divider()
     st.subheader("Log a Sale or Repair")
     selected_id = st.selectbox("Select Item ID", df['ID'].unique(), key="main_select_id")
@@ -60,7 +60,7 @@ if os.path.exists(INV_FILE):
         else:
             st.error("Not enough quantity on hand.")
 # --- End of moved section
-subheader("All Inventory Items")
+st.subheader("All Inventory Items")
         st.dataframe(df[['Category', 'Model', 'Qty_On_Hand', 'Qty_On_Order']], use_container_width=True)
 
     with tab2:
@@ -88,5 +88,6 @@ subheader("All Inventory Items")
 else:
 
     st.error("No inventory file found. Please run inventory.py first to create the data.")
+
 
 
