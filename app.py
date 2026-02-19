@@ -30,17 +30,23 @@ with tab1:
     st.divider()
     st.header("🏗️ Log Transaction")
     
-    col1, col2, col3 = st.columns([2, 1, 1])
+    # Updated Layout to include User Selection
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     
     with col1:
-        # Select from IDs that are currently in stock
         available_ids = df[df['Qty_On_Hand'] > 0]['ID'].tolist()
         selected_id = st.selectbox("Select Item ID (VIN)", options=available_ids)
     
     with col2:
+        # Added the new crew members here
+        user_list = ["Captain", "Fredrik L", "Bailey S", "Alain L", "Michael A"]
+        selected_user = st.selectbox("Logged By", options=user_list)
+
+    with col3:
         action = st.selectbox("Action", ["Sale", "Repair Start", "Repair Complete"])
     
-    with col3:
+    with col4:
+        st.write(" ") # Spacing for button alignment
         if st.button("Update Inventory", use_container_width=True):
             idx = df.index[df['ID'] == selected_id].tolist()[0]
             
@@ -54,12 +60,12 @@ with tab1:
             
             df.to_csv(INV_FILE, index=False)
             
-            # Log the activity
+            # Log the activity with the SELECTED USER
             log_entry = pd.DataFrame([{
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "ID": selected_id,
                 "Action": action,
-                "User": "Captain"
+                "User": selected_user
             }])
             
             if not os.path.isfile(LOG_FILE):
@@ -67,9 +73,8 @@ with tab1:
             else:
                 log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
             
-            st.success(f"Transaction Complete: {selected_id} updated to {action}")
+            st.success(f"Transaction Complete: {selected_id} updated by {selected_user}")
             
-            # --- FIX FOR RERUN ERROR ---
             try:
                 st.rerun()
             except AttributeError:
@@ -92,4 +97,4 @@ with tab3:
         log_df = pd.read_csv(LOG_FILE)
         st.table(log_df.sort_values(by="Timestamp", ascending=False).head(20))
     else:
-        st.info("No transactions have been logged yet. Use the 'Log Transaction' tool in the first tab to start.")
+        st.info("No transactions logged yet.")
