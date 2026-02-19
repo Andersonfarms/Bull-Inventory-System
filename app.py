@@ -53,11 +53,16 @@ with tab1:
             if len(idx_list) == 1:
                 idx = idx_list[0]
                 item_model = df.at[idx, 'Model']
+                current_qty = df.at[idx, 'Qty_On_Hand']
                 
-                # 3. Apply changes
+                # 3. Apply changes (Smart Subtract)
                 if action == "Sale":
-                    df.at[idx, 'Qty_On_Hand'] = 0
-                    df.at[idx, 'Status'] = "Sold"
+                    if current_qty > 1:
+                        df.at[idx, 'Qty_On_Hand'] = current_qty - 1
+                        # Status stays "Available" because we still have stock
+                    else:
+                        df.at[idx, 'Qty_On_Hand'] = 0
+                        df.at[idx, 'Status'] = "Sold"
                 elif action == "Repair Start":
                     df.at[idx, 'Status'] = "In Repair"
                 elif action == "Repair Complete":
@@ -81,13 +86,13 @@ with tab1:
                     log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
                 
                 st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
+                
                 try:
-                 st.rerun()
+                    st.rerun()
                 except AttributeError:
-                 st.experimental_rerun()
+                    st.experimental_rerun()
             else:
                 st.error("Error: Could not locate a unique record for this ID.")
-
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
     st.markdown("### 🚜 Machines")
