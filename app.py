@@ -17,7 +17,7 @@ def log_event(asset_id, action, details):
         df_log = pd.concat([df_log, new_log], ignore_index=True)
         df_log.to_csv(LOG_FILE, index=False)
 
-st.title("🚜 Bull Equipment Inventory")
+st.title("🏗️ Bull Equipment Inventory")
 
 if os.path.exists(INV_FILE):
     df = pd.read_csv(INV_FILE)
@@ -91,3 +91,4 @@ if st.sidebar.button("Update Inventory"):
         st.rerun() # Refresh the dashboard
     else:
         st.sidebar.error("Not enough stock on hand!")
+
