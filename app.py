@@ -51,37 +51,49 @@ with tab1:
             item_model = df.at[idx, 'Model']
             
             # Update Status
-        if len(idx) == 1:
-            if action == "Sale":
-                df.at[idx, 'Qty_On_Hand'] = 0
-                df.at[idx, 'Status'] = "Sold"
-            elif action == "Repair Start":
-                df.at[idx, 'Status'] = "In Repair"
-            elif action == "Repair Complete":
-                df.at[idx, 'Status'] = "Available"
+     if st.button("Update Inventory", use_container_width=True):
+            # 1. First, find all matches for the selected VIN
+            idx_list = df.index[df['ID'] == selected_id].tolist()
             
-            df.to_csv(INV_FILE, index=False)
-            
-            # Log the activity with the exact Model
-            log_entry = pd.DataFrame([{
-                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "ID": selected_id,
-                "Model": item_model,
-                "Action": action,
-                "User": selected_user
-            }])
-            
-            if not os.path.isfile(LOG_FILE):
-                log_entry.to_csv(LOG_FILE, index=False)
+            # 2. SAFETY LOCK: Only proceed if exactly one match is found
+            if len(idx_list) == 1:
+                idx = idx_list[0] # Get the specific row index
+                item_model = df.at[idx, 'Model'] # Now look up the model safely
+                
+                # 3. Update Status and Quantity
+                if action == "Sale":
+                    df.at[idx, 'Qty_On_Hand'] = 0
+                    df.at[idx, 'Status'] = "Sold"
+                elif action == "Repair Start":
+                    df.at[idx, 'Status'] = "In Repair"
+                elif action == "Repair Complete":
+                    df.at[idx, 'Status'] = "Available"
+                
+                # 4. Save to Inventory File
+                df.to_csv(INV_FILE, index=False)
+                
+                # 5. Log the activity
+                log_entry = pd.DataFrame([{
+                    "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "ID": selected_id,
+                    "Model": item_model,
+                    "Action": action,
+                    "User": selected_user
+                }])
+                
+                if not os.path.isfile(LOG_FILE):
+                    log_entry.to_csv(LOG_FILE, index=False)
+                else:
+                    log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
+                
+                st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
+                
+                try:
+                    st.rerun()
+                except AttributeError:
+                    st.experimental_rerun()
             else:
-                log_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
-            
-            st.success(f"Success: {item_model} ({selected_id}) logged by {selected_user}")
-            
-            try:
-                st.rerun()
-            except AttributeError:
-                st.experimental_rerun()
+                st.error("Error: Could not locate a unique record for this ID. Please check the inventory file.")  
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
