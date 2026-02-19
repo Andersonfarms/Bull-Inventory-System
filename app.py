@@ -95,7 +95,7 @@ with tab1:
                 st.error("Error: Could not locate a unique record for this ID.")
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
-    st.markdown("### 🚜 Machines")
+    st.markdown("### 🏗️ Machines")
     machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
     if not machines_df.empty:
         m_counts = machines_df.groupby('Model')['Qty_On_Hand'].sum()
