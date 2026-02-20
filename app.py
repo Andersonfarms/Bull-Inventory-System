@@ -28,9 +28,10 @@ else:
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity", "➕ Add New Stock"])
 
 with tab1:
-    st.subheader("Live Warehouse Stock (Manual Edit Mode)")
-    st.info("💡 You can edit cells directly. Click 'Save Manual Edits' when finished.")
-
+    st.subheader("Live Warehouse Stock")
+    # Change this line to show the full list without filters:
+    st.dataframe(df, use_container_width=True)
+    
     try:
         edited_df = st.data_editor(
             df, 
