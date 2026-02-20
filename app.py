@@ -29,9 +29,19 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 with tab1:
     st.subheader("Live Warehouse Stock (Manual Edit Mode)")
     st.info("💡 You can edit cells directly. Click 'Save Manual Edits' when finished.")
-                 
-            st.markdown("<h1 style='text-align: center; color: #28a745;'>ACCEPTED</h1>", unsafe_allow_html=True)
-            time.sleep(2)    
+    
+    try:
+        edited_df = st.data_editor(
+            df, 
+            use_container_width=True, 
+            num_rows="dynamic", 
+            key="inventory_editor",
+            column_config={"Qty_On_Hand": st.column_config.NumberColumn(format="%d")}
+        )
+        
+        if st.button("💾 Save Manual Edits"):
+            edited_df.to_csv(INV_FILE, index=False)
+            st.success("Inventory updated successfully!")
             try:
                 st.rerun()
             except AttributeError:
@@ -53,7 +63,7 @@ with tab1:
         selected_id = selected_option.split(" - ")[0] if selected_option else None
     
     with col2:
-        user_list = ["Fredrik L", "Bailey S", "Michael A"]
+        user_list = ["Captain", "Fredrik L", "Bailey S", "Alain L", "Michael A"]
         selected_user = st.selectbox("Logged By", options=user_list)
         
     with col3:
