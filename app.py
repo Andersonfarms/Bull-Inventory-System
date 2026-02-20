@@ -100,11 +100,11 @@ with tab1:
                 # ------------------------------
 
                 st.success(f"Success: {item_size} {item_model} updated and logged.")
+                st.markdown("<h1 style='text-align: center; color: #28a745;'>ACCEPTED</h1>", unsafe_allow_html=True) 
+                time.sleep(2)
                 try:
                     st.rerun()
                 except AttributeError:
-                    ("<h1 style='text-align: center; color: #28a745;'>ACCEPTED</h1>", unsafe_allow_html=True)
-                    time.sleep(2)
                     st.experimental_rerun()
 
 with tab2:
