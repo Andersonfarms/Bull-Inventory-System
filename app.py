@@ -29,9 +29,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 with tab1:
     st.subheader("Live Warehouse Stock (Manual Edit Mode)")
     st.info("💡 You can edit cells directly. Click 'Save Manual Edits' when finished.")
-          
-       
-            st.success("Inventory updated successfully!")
+                 
             st.markdown("<h1 style='text-align: center; color: #28a745;'>ACCEPTED</h1>", unsafe_allow_html=True)
             time.sleep(2)    
             try:
