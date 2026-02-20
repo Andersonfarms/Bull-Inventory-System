@@ -61,10 +61,14 @@ with tab1:
     st.header("🏗️ Log Transaction")
     
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-    available_items = df[df['Qty_On_Hand'] > 0]
-    
-    with col1:
+    if not df.empty:
+        available_items = df[df['Status'] == 'Available']
         item_options = available_items.apply(lambda x: f"{x['ID']} - {x['Size']} {x['Model']}", axis=1).tolist()
+    else:
+        item_options = []
+
+    with col1:
+        selected_option = st.selectbox("Select Item (VIN - Model)", options=item_options)
         selected_option = st.selectbox("Select Item (VIN - Model)", options=item_options)
         selected_id = selected_option.split(" - ")[0] if selected_option else None
     
