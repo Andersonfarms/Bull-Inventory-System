@@ -28,6 +28,7 @@ else:
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity", "➕ Add New Stock"])
 
 with tab1:
+    df = pd.read_csv(INV_FILE)
     st.subheader("Live Warehouse Stock")
     st.dataframe(df, use_container_width=True) 
     
