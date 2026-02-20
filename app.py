@@ -31,7 +31,7 @@ with tab1:
     st.subheader("Live Warehouse Stock (Manual Edit Mode)")
     st.info("💡 You can edit cells directly. Click 'Save Manual Edits' when finished.")
 
-     try:
+    try:
         edited_df = st.data_editor(
             df, 
             use_container_width=True, 
