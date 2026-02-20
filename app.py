@@ -90,30 +90,37 @@ with tab1:
                 elif action == "Repair Complete":
                     df.at[idx, 'Status'] = "Available"
                 
+                # Save Inventory
                 df.to_csv(INV_FILE, index=False)
                 
-                new_log = {
+                # --- UPDATED ROBUST LOGGING ---
+                new_log_data = {
                     "Timestamp": datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S"),
-                    "ID": selected_id,
+                    "ID": str(selected_id).strip(), # Ensure ID is clean string
                     "Model": item_model,
                     "Size": item_size,
                     "Action": action,
                     "User": selected_user
                 }
-                log_df_entry = pd.DataFrame([new_log])
                 
-                if not os.path.exists(LOG_FILE):
-                    log_df_entry.to_csv(LOG_FILE, index=False)
+                # Load existing log or create new one if it doesn't exist
+                if os.path.exists(LOG_FILE):
+                    try:
+                        current_log_df = pd.read_csv(LOG_FILE)
+                    except:
+                        current_log_df = pd.DataFrame(columns=["Timestamp", "ID", "Model", "Size", "Action", "User"])
                 else:
-                    log_df_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
-                
-                st.success(f"Success: {item_size} {item_model} updated.")
+                    current_log_df = pd.DataFrame(columns=["Timestamp", "ID", "Model", "Size", "Action", "User"])
+
+                # Add the new entry and save
+                new_entry_df = pd.DataFrame([new_log_data])
+                updated_log_df = pd.concat([current_log_df, new_entry_df], ignore_index=True)
+                updated_log_df.to_csv(LOG_FILE, index=False)
+                # ------------------------------
+
+                st.success(f"Success: {item_size} {item_model} updated and logged.")
                 try:
                     st.rerun()
-                except AttributeError:
-                    st.experimental_rerun()
-            else:
-                st.error("Error: Record lookup failed.")
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
