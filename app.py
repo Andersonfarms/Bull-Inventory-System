@@ -121,6 +121,8 @@ with tab1:
                 st.success(f"Success: {item_size} {item_model} updated and logged.")
                 try:
                     st.rerun()
+                except AttributeError:
+                    st.experimental_rerun()
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
