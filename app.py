@@ -42,7 +42,7 @@ with tab1:
         if st.button("💾 Save Manual Edits"):
             edited_df.to_csv(INV_FILE, index=False)
             st.success("Inventory updated successfully!")
-            try#:
+            try:
                 st.rerun()
             except AttributeError:
                 st.experimental_rerun()
