@@ -35,22 +35,22 @@ with tab1:
         edited_df = st.data_editor(
             df, 
             use_container_width=True, 
-            num_rows="dynamic", 
+            num_rows=    "dynamic", 
             key="inventory_editor",
             column_config={"Qty_On_Hand": st.column_config.NumberColumn(format="%d")}
         )
-        
+     
         if st.button("💾 Save Manual Edits"):
             edited_df.to_csv(INV_FILE, index=False)
             st.success("Inventory updated successfully!")
-            try:
+            try#:
                 st.rerun()
             except AttributeError:
                 st.experimental_rerun()
                 
     except AttributeError:
         st.warning("Manual Edit Mode is not supported in this version. Reverting to read-only view.")
-        st.dataframe(df[['ID', 'Category', 'Model', 'Size', 'Status', 'Location', 'Qty_On_Hand']], use_container_width=True)
+        
         
     st.divider()
     st.header("🏗️ Log Transaction")
