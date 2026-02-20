@@ -32,10 +32,6 @@ with tab1:
     st.info("💡 You can edit cells directly. Click 'Save Manual Edits' when finished.")
 
                     
-    except AttributeError:
-        st.warning("Manual Edit Mode is not supported in this version. Reverting to read-only view.")
-        st.dataframe(df, use_container_width=True)
-
     st.divider()
     st.header("🏗️ Log Transaction")
     
