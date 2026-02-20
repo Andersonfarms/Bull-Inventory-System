@@ -50,7 +50,7 @@ with tab1:
                 
     except AttributeError:
         st.warning("Manual Edit Mode is not supported in this version. Reverting to read-only view.")
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df[['ID', 'Category', 'Model', 'Size', 'Status', 'Location', 'Qty_On_Hand']], use_container_width=True)
         
     st.divider()
     st.header("🏗️ Log Transaction")
