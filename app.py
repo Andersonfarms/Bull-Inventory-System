@@ -175,7 +175,7 @@ with tab4:
         f_id = st.text_input("Item ID (VIN)")
         f_cat = st.selectbox("Category", ["Machine", "Attachment", "Implement"])
         f_model = st.text_input("Model Name")
-        f_size_choice = st.selectbox("Select Size", ["N/A", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom"])
+        f_size_choice = st.selectbox("Select Size", ["8"\, "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom"])
         f_custom_size = st.text_input("If Custom, enter size here:")
         f_size = f_custom_size if f_size_choice == "Custom" else f_size_choice
         f_loc = st.text_input("Location")
