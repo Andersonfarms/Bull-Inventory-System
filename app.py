@@ -195,7 +195,7 @@ with tab4:
                 log_add = pd.DataFrame([{
                     "Timestamp": datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S"),
                     "ID": f_id, "Model": f_model, "Size": f_size,
-                    "Action": "Added New Stock", user_list: ["Fredrik L", "Bailey S", "Michael A"]
+                    "Action": "Added New Stock", "User": "EMPLOYEE"
                 }])
                 log_add.to_csv(LOG_FILE, mode='a', header=not os.path.exists(LOG_FILE), index=False)
                 
