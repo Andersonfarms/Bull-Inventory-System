@@ -30,8 +30,7 @@ with tab1:
     st.subheader("Live Warehouse Stock (Manual Edit Mode)")
     st.info("💡 You can edit cells directly. Click 'Save Manual Edits' when finished.")
           
-        if st.button("💾 Save Manual Edits"):
-            edited_df.to_csv(INV_FILE, index=False)
+       
             st.success("Inventory updated successfully!")
             st.markdown("<h1 style='text-align: center; color: #28a745;'>ACCEPTED</h1>", unsafe_allow_html=True)
             time.sleep(2)    
