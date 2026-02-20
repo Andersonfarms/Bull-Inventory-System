@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-import pytz # Added for timezone support
+import pytz
 
 # --- CONFIGURATION ---
 INV_FILE = "bull_inventory.csv"
 LOG_FILE = "activity_log.csv"
-CENTRAL = pytz.timezone('US/Central') # Define Central Time
+CENTRAL = pytz.timezone('US/Central')
 
 st.set_page_config(page_title="Bull Inventory System", layout="wide")
 st.title("🏗️ Bull Inventory")
@@ -91,7 +91,6 @@ with tab1:
                 
                 df.to_csv(INV_FILE, index=False)
                 
-                # Log entry with CENTRAL TIME
                 log_entry = pd.DataFrame([{
                     "Timestamp": datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S"),
                     "ID": selected_id,
@@ -114,7 +113,40 @@ with tab1:
             else:
                 st.error("Error: Could not locate record.")
 
-# ... (Tab 2 and 3 logic) ...
+with tab2:
+    st.subheader("📊 Detailed Unit Counts")
+    st.markdown("### 🏗️ Machines")
+    machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
+    if not machines_df.empty:
+        m_counts = machines_df.groupby('Model')['Qty_On_Hand'].sum()
+        cols = st.columns(len(m_counts) if len(m_counts) > 0 else 1)
+        for i, (model, count) in enumerate(m_counts.items()):
+            cols[i].metric(label=model, value=int(count))
+
+    st.divider()
+    st.markdown("### 🛠️ Attachments & Implements")
+    attach_df = df[(df['Category'].isin(['Attachment', 'Implement'])) & (df['Qty_On_Hand'] > 0)]
+    if not attach_df.empty:
+        # Grouping by Model AND Size for clarity
+        a_counts = attach_df.groupby(['Model', 'Size'])['Qty_On_Hand'].sum()
+        for (model, size), count in a_counts.items():
+            label = f"{size} {model}" if size and size != "N/A" else model
+            st.metric(label=label, value=int(count))
+
+with tab3:
+    st.subheader("🕒 Recent Activity")
+    if os.path.exists(LOG_FILE):
+        try:
+            log_df = pd.read_csv(LOG_FILE, on_bad_lines='skip')
+            if not log_df.empty:
+                # Show all columns available in the log
+                st.dataframe(log_df.sort_values(by=log_df.columns[0], ascending=False), use_container_width=True)
+            else:
+                st.info("No activity recorded yet.")
+        except Exception as e:
+            st.error(f"Log Error: {e}")
+    else:
+        st.info("No transactions logged yet.")
 
 with tab4:
     st.subheader("➕ Add New Inventory")
@@ -139,7 +171,6 @@ with tab4:
                 }])
                 pd.concat([df, new_row], ignore_index=True).to_csv(INV_FILE, index=False)
                 
-                # Log addition with CENTRAL TIME
                 log_add = pd.DataFrame([{
                     "Timestamp": datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S"),
                     "ID": f_id, "Model": f_model, "Size": f_size,
