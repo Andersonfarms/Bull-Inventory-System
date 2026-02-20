@@ -29,7 +29,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 
 with tab1:
     st.subheader("Live Warehouse Stock")
-    st.dataframe(df, use_container_width=True) # <-- Move it here!
+    st.dataframe(df, use_container_width=True) 
     
     # Then the rest of your transaction code follows...
     st.divider()
