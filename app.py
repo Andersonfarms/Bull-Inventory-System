@@ -30,7 +30,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 with tab1:
     df = pd.read_csv(INV_FILE)
     st.subheader("Live Warehouse Stock")
-    st.dataframe(df, use_container_width=True) 
+    st.dataframe(df.assign(ID=df['ID'].astype(str)), use_container_width=True)
     
     # Then the rest of your transaction code follows...
     st.divider()
@@ -137,7 +137,8 @@ with tab1:
 
 with tab2:
     st.subheader("📊 Detailed Unit Counts")
-    st.markdown("### 🏗️ Machines")
+    st.markdown("<h1 style='text-align: center; color: green;'>ACCEPTED</h1>", unsafe_allow_html=True)
+    st.balloons() # Added a little celebration for the new stock!
     machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
     if not machines_df.empty:
         m_counts = machines_df.groupby('Model')['Qty_On_Hand'].sum()
