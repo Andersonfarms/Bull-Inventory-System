@@ -68,10 +68,9 @@ with tab1:
         item_options = []
 
     with col1:
-        selected_option = st.selectbox("Select Item (VIN - Model)", options=item_options), key="sb_tab1_col1_1"
-        selected_option = st.selectbox("Select Item (VIN - Model)", options=item_options)
-        selected_id = selected_option.split(" - ")[0] if selected_option else None, key="sb_tab1_col1_1"
-    , key="sb_tab1_col1_2"
+        selected_option = st.selectbox("Select Item (VIN - Model)", options=item_options, key="sb_tab1_col1_1")
+            selected_id = selected_option.split(" - ")[0] if selected_option else None
+        
     with col2:
         user_list = ["Fredrik L", "Bailey S"]
         selected_user = st.selectbox("Logged By", options=user_list)
