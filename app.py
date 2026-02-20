@@ -64,7 +64,7 @@ with tab1:
         selected_id = selected_option.split(" - ")[0] if selected_option else None
     
     with col2:
-        user_list = ["Captain", "Fredrik L", "Bailey S", "Alain L", "Michael A"]
+        user_list = ["Fredrik L", "Bailey S"]
         selected_user = st.selectbox("Logged By", options=user_list)
         
     with col3:
