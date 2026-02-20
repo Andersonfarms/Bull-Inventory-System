@@ -29,7 +29,6 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 
 with tab1:
     st.subheader("Live Warehouse Stock")
-    # Change this line to show the full list without filters:
     st.dataframe(df, use_container_width=True)
     
     try:
