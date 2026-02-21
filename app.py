@@ -33,8 +33,7 @@ with tab1:
         df.assign(ID=df['ID'].astype(str)), 
         use_container_width=True,
         column_config={
-            "Qty_On_Hand": st.column_config.NumberColumn(format="%d")
-        }
+            "Qty_On_Hand": st.column_config.NumberColumn(format="%d")}
     )
                 
     st.divider()
