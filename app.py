@@ -29,12 +29,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 
 with tab1:
     st.subheader("Live Warehouse Stock")
-    st.dataframe(
-        df.assign(ID=df['ID'].astype(str)), 
-        use_container_width=True,
-        column_config={
-            "Qty_On_Hand": st.column_config.NumberColumn(format="%d")}
-    )
+   st.dataframe(df.assign(ID=df['ID'].astype(str)), use_container_width=True)
                 
     st.divider()
     st.header("🏗️ Log Transaction")
