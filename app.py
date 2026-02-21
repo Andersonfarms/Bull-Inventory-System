@@ -31,8 +31,8 @@ with tab1:
    st.subheader("Live Warehouse Stock")
    st.dataframe(df.assign(ID=df['ID'].astype(str)), use_container_width=True)
                 
-    st.divider()
-    st.header("🏗️ Log Transaction")
+   st.divider()
+   st.header("🏗️ Log Transaction")
     
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     available_items = df[df['Qty_On_Hand'] > 0]
