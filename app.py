@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+import time
 import pytz
 
 # --- CONFIGURATION ---
@@ -161,34 +162,67 @@ with tab3:
 with tab4:
     st.subheader("➕ Add New Inventory")
     with st.form("new_item_form", clear_on_submit=True):
-        f_id = st.text_input("Item ID (VIN)")
+        f_id = st.text_input("Item ID (e.g., 1208003)")
         f_cat = st.selectbox("Category", ["Machine", "Attachment", "Implement"])
-        f_model = st.selectbox("Model Name", ["12X", "18X", "22X", "25X", "40X", "Bucket", "Ripper", "Auger", "Rake", "Wood Splitter", "Flail Mower", "Forks" "Hedge Trimmers"])
+        f_type = st.text_input("Type (e.g., Excavator, Skid Steer)")
+        f_model = st.selectbox("Model Name", ["12X", "18X", "22X", "25X", "40X", "Bucket", "Ripper", "Auger", "Rake", "Wood Splitter", "Flail Mower", "Forks", "Hedge Trimmers"])
+        f_serial = st.text_input("Serial Number (VIN e.g., 2025-**-*****)")
         f_size_choice = st.selectbox("Select Size", ["N/A", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom"])
         f_custom_size = st.text_input("If Custom, enter size here:")
         f_size = f_custom_size if f_size_choice == "Custom" else f_size_choice
-        f_loc = st.text_input("Location")
-        f_qty = st.number_input("Starting Quantity", min_value=1, value=1, step=1)
+        f_loc = st.text_input("Location", value="Warehouse")
         
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            f_qty = st.number_input("Qty On Hand", min_value=1, value=1, step=1)
+        with col2:
+            f_qty_order = st.number_input("Qty On Order", min_value=0, value=0, step=1)
+        with col3:
+            f_reorder = st.number_input("Reorder Level", min_value=0, value=0, step=1)
+            
         submitted = st.form_submit_button("Add to Inventory")
+        
         if submitted:
             if not f_id or not f_model:
                 st.error("Missing info.")
             else:
+                # 1 & 2: Match the exact columns of the live warehouse stock and save properly
                 new_row = pd.DataFrame([{
-                    "ID": f_id, "Category": f_cat, "Model": f_model, "Size": f_size,
-                    "Status": "Available", "Location": f_loc, "Qty_On_Hand": f_qty
+                    "ID": f_id,
+                    "Category": f_cat,
+                    "Type": f_type,
+                    "Model": f_model,
+                    "Serial_Number": f_serial,
+                    "Status": "Available",
+                    "Location": f_loc,
+                    "Qty_On_Hand": f_qty,
+                    "Qty_On_Order": f_qty_order,
+                    "Reorder_Level": f_reorder,
+                    "Size": f_size
                 }])
-                pd.concat([df, new_row], ignore_index=True).to_csv(INV_FILE, index=False)
                 
+                # Append and Save to CSV
+                df = pd.concat([df, new_row], ignore_index=True)
+                df.to_csv(INV_FILE, index=False)
+                
+                # Log the addition
                 log_add = pd.DataFrame([{
                     "Timestamp": datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S"),
-                    "ID": f_id, "Model": f_model, "Size": f_size,
-                    "Action": "Added New Stock", "User": "Employee"
+                    "ID": f_id,
+                    "Model": f_model,
+                    "Size": f_size,
+                    "Action": "Added New Stock",
+                    "User": "Captain" 
                 }])
                 log_add.to_csv(LOG_FILE, mode='a', header=not os.path.exists(LOG_FILE), index=False)
                 
-                st.success("Added to stock.")
+                # 3: Flash the ACCEPTED message and balloons
+                st.markdown("<h1 style='text-align: center; color: green;'>ACCEPTED</h1>", unsafe_allow_html=True)
+                st.balloons()
+                
+                # Pause for 1.5 seconds so you can actually see the message flash before it clears!
+                time.sleep(1.5) 
+                
                 try:
                     st.rerun()
                 except AttributeError:
