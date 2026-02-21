@@ -37,7 +37,10 @@ with tab1:
             use_container_width=True, 
             num_rows="dynamic", 
             key="inventory_editor",
-            column_config={"Qty_On_Hand": st.column_config.NumberColumn(format="%d")}
+           column_config={
+    "Qty_On_Hand": st.column_config.NumberColumn(format="%d"),
+    "ID": st.column_config.TextColumn()
+}
         )
         
         if st.button("💾 Save Manual Edits"):
