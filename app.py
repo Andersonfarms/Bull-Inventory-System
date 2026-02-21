@@ -30,10 +30,6 @@ tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "�
 with tab1:
     
                 
-    except AttributeError:
-        st.warning("Manual Edit Mode is not supported in this version. Reverting to read-only view.")
-        st.dataframe(df.assign(ID=df['ID'].astype(str)), use_container_width=True)
-
     st.divider()
     st.header("🏗️ Log Transaction")
     
