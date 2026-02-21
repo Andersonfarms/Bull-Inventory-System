@@ -34,8 +34,8 @@ with tab1:
    st.divider()
    st.header("🏗️ Log Transaction")
     
-    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-    available_items = df[df['Qty_On_Hand'] > 0]
+   col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+   available_items = df[df['Qty_On_Hand'] > 0]
     
     with col1:
         item_options = available_items.apply(lambda x: f"{x['ID']} - {x['Size']} {x['Model']}", axis=1).tolist()
