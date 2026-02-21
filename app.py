@@ -167,7 +167,7 @@ with tab4:
     with st.form("new_item_form", clear_on_submit=True):
         f_id = st.text_input("Item ID (e.g., 1208003)")
         f_cat = st.selectbox("Category", ["Machine", "Attachment", "Implement"])
-        f_type = st.selectbox("Type', ["Excavator", "Skid Steer"])
+        f_type = st.selectbox("Type", ["Excavator", "Skid Steer"])
         f_model = st.selectbox("Model Name", ["12X", "18X", "22X", "25X", "40X", "Bucket", "Ripper", "Auger", "Rake", "Wood Splitter", "Flail Mower", "Forks", "Hedge Trimmers"])
         f_serial = st.text_input("Serial Number (VIN e.g., 2025-**-*****)")
         f_size_choice = st.selectbox("Select Size", ["N/A", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom", "N/A"])
