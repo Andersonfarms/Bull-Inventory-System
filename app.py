@@ -1,77 +1,71 @@
-import streamlit as st
-import pandas as pd
-import os
-from datetime import datetime
-import pytz
 
-# --- CONFIGURATION ---
-INV_FILE = "bull_inventory.csv"
-LOG_FILE = "activity_log.csv"
-CENTRAL = pytz.timezone('US/Central')
 
-st.set_page_config(page_title="Bull Inventory System", layout="wide")
-st.title("🏗️ Bull Inventory")
-
-# --- DATA LOAD ---
-if os.path.exists(INV_FILE):
-    df = pd.read_csv(INV_FILE)
-    # Safety checks for missing columns
-    if 'Size' not in df.columns:
-        df['Size'] = ""
-    if 'Model' not in df.columns:
-        df['Model'] = ""
-    df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0).astype(int)
-    df = df.fillna("")
-else:
-    st.error("Inventory file not found!")
-    st.stop()
-
-# --- DASHBOARD TABS ---
-tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity", "➕ Add New Stock"])
-
-with tab1:
-    # Refresh data for the live view
-    df = pd.read_csv(INV_FILE)
+    with tab2:
+        st.subheader("📊 Detailed Unit Counts")
+        st.markdown("### 🏗️ Machines")
+        machines_df = df[(df['Category'] == 'Machine') & (df['Qty_On_Hand'] > 0)]
+        if not machines_df.empty:
+            m_counts = machines_df.groupby('Model')['Qty_On_Hand'].sum()
+            cols = st.columns(len(m_counts) if len(m_counts) > 0 else 1)
+            for i, (model, count) in enumerate(m_counts.items()):
+                cols[i].metric(label=model, value=int(count))
     
-    # Re-apply safety checks after refreshing the live view
-    if 'Size' not in df.columns:
-        df['Size'] = ""
-    if 'Model' not in df.columns:
-        df['Model'] = ""
-    df = df.fillna("")
-
-    st.subheader("Live Warehouse Stock")
-    # Display ID as string to remove commas
-    st.dataframe(df.assign(ID=df['ID'].astype(str)), use_container_width=True)
-
-    st.divider()
-    st.header("🏗️ Log Transaction")
+        st.divider()
+        st.markdown("### 🛠️ Attachments & Implements")
+        attach_df = df[(df['Category'].isin(['Attachment', 'Implement'])) & (df['Qty_On_Hand'] > 0)]
+        if not attach_df.empty:
+            a_counts = attach_df.groupby(['Model', 'Size'])['Qty_On_Hand'].sum()
+            for (model, size), count in a_counts.items():
+                label = f"{size} {model}" if size and size != "N/A" else model
+                st.metric(label=label, value=int(count))
     
-    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+    with tab3:
+        st.subheader("🕒 Recent Activity")
+        if os.path.exists(LOG_FILE):
+            try:
+                log_df = pd.read_csv(LOG_FILE, on_bad_lines='skip')
+                if not log_df.empty:
+                    st.dataframe(log_df.sort_values(by=log_df.columns[0], ascending=False), use_container_width=True)
+                else:
+                    st.info("No activity recorded yet.")
+            except Exception as e:
+                st.error(f"Log Error: {e}")
+        else:
+            st.info("No transactions logged yet.")
     
-    if not df.empty:
-        available_items = df[df['Status'] == 'Available']
-        # Safely format the options using .get() to prevent KeyErrors
-        item_options = available_items.apply(
-            lambda x: f"{x.get('ID', 'N/A')} - {x.get('Size', '')} {x.get('Model', '')}", axis=1
-        ).tolist()
-    else:
-        item_options = []
-
-    with col1:
-        selected_option = st.selectbox("Select Item (VIN - Model)", options=item_options, key="transaction_select")
-        selected_id = str(selected_option.split(" - ")[0]) if selected_option else None
-
-    with col2:
-        user_list = ["Fredrik L", "Bailey S"]
-        selected_user = st.selectbox("Logged By", options=user_list)
-
-    with col3:
-        action = st.selectbox("Action", ["Check Out", "Return", "Sold"])
-
-    with col4:
-        if st.button("Submit Transaction"):
-            if selected_id:
-                # Update Status
-                new_status = "Out" if action == "Check Out" or action == "Sold" else "Available"
-                df
+    with tab4:
+        st.subheader("➕ Add New Inventory")
+        with st.form("new_item_form", clear_on_submit=True):
+            f_id = st.text_input("Item ID (VIN)")
+            f_cat = st.selectbox("Category", ["Machine", "Attachment", "Implement"])
+            f_model = st.text_input("Model Name")
+            f_size_choice = st.selectbox("Select Size", ["N/A", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom"])
+            f_custom_size = st.text_input("If Custom, enter size here:")
+            f_size = f_custom_size if f_size_choice == "Custom" else f_size_choice
+            f_loc = st.text_input("Location")
+            f_qty = st.number_input("Starting Quantity", min_value=1, value=1, step=1)
+            
+            submitted = st.form_submit_button("Add to Inventory")
+            if submitted:
+                if not f_id or not f_model:
+                    st.error("Missing info.")
+                else:
+                    new_row = pd.DataFrame([{
+                        "ID": f_id, "Category": f_cat, "Model": f_model, "Size": f_size,
+                        "Status": "Available", "Location": f_loc, "Qty_On_Hand": f_qty
+                    }])
+                    pd.concat([df, new_row], ignore_index=True).to_csv(INV_FILE, index=False)
+                    
+                    log_add = pd.DataFrame([{
+                        "Timestamp": datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S"),
+                        "ID": f_id, "Model": f_model, "Size": f_size,
+                        "Action": "Added New Stock", "User": "Captain"
+                    }])
+                    log_add.to_csv(LOG_FILE, mode='a', header=not os.path.exists(LOG_FILE), index=False)
+                    
+                    st.success("Added to stock.")
+                    try:
+                        st.rerun()
+                    except AttributeError:
+                        st.experimental_rerun()
+    
