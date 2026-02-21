@@ -53,7 +53,7 @@ with tab1:
                 
     except AttributeError:
         st.warning("Manual Edit Mode is not supported in this version. Reverting to read-only view.")
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df.assign(ID=df['ID'].astype(str)), use_container_width=True)
 
     st.divider()
     st.header("🏗️ Log Transaction")
@@ -67,7 +67,7 @@ with tab1:
         selected_id = selected_option.split(" - ")[0] if selected_option else None
     
     with col2:
-        user_list = ["Captain", "Fredrik L", "Bailey S", "Alain L", "Michael A"]
+        user_list = ["Fredrik L", "Bailey S", "Alain L", "Michael A"]
         selected_user = st.selectbox("Logged By", options=user_list)
         
     with col3:
@@ -215,7 +215,7 @@ with tab4:
                     "Model": f_model,
                     "Size": f_size,
                     "Action": "Added New Stock",
-                    "User": "Captain" 
+                    "User": "Employee" 
                 }])
                 log_add.to_csv(LOG_FILE, mode='a', header=not os.path.exists(LOG_FILE), index=False)
                 
