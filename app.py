@@ -99,7 +99,7 @@ with tab1:
                     df.at[idx, 'Status'] = "Available"
                 
                 # Save Inventory
-                df.to_csv(INV_FILE, index=False)
+                sheet.update([df.columns.values.tolist()] + df.values.tolist())
                 
                 # --- UPDATED ROBUST LOGGING ---
                 new_log_data = {
@@ -210,7 +210,7 @@ with tab4:
                 
                 # Append and Save to CSV
                 df = pd.concat([df, new_row], ignore_index=True)
-                df.to_csv(INV_FILE, index=False)
+                sheet.update([df.columns.values.tolist()] + df.values.tolist())
                 
                 # Log the addition
                 log_add = pd.DataFrame([{
