@@ -11,7 +11,7 @@ import json
 LOG_FILE = "activity_log.csv"
 CENTRAL = pytz.timezone('US/Central')
 SHEET_ID = "1JJ27qTy-hcaypgaPn4yvpCedl0Id-tNHHQpZO2LTra8" # Your Google Sheet ID
-ICON_FILE = "app_icon.png" # <--- Add your image filename here!
+ICON_FILE = "bull.png" # <--- Add your image filename here!
 
 # Set the browser tab icon
 st.set_page_config(page_title="Bull Inventory System", page_icon=ICON_FILE, layout="wide")
