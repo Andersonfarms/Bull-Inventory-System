@@ -2,27 +2,55 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-import time
 import pytz
+import gspread
+from google.oauth2.service_account import Credentials
+import json
 
 # --- CONFIGURATION ---
-INV_FILE = "bull_inventory.csv"
 LOG_FILE = "activity_log.csv"
 CENTRAL = pytz.timezone('US/Central')
+SHEET_ID = "1JJ27qTy-hcaypgaPn4yvpCedl0Id-tNHHQpZO2LTra8" # Your Google Sheet ID
 
 st.set_page_config(page_title="Bull Inventory System", layout="wide")
 st.title("🏗️ Bull Inventory")
 
+# --- CONNECT TO GOOGLE SHEETS ---
+@st.cache_resource
+def init_connection():
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    # Load the secret we pasted into Streamlit
+    creds_dict = json.loads(st.secrets["google_credentials"])
+    credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(credentials)
+    return client
+
+client = init_connection()
+sheet = client.open_by_key(SHEET_ID).sheet1
+
 # --- DATA LOAD ---
-if os.path.exists(INV_FILE):
-    df = pd.read_csv(INV_FILE)
-    df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0).astype(int)
+def load_data():
+    # Grab all data from the sheet
+    data = sheet.get_all_records()
+    if not data:
+        # If sheet is empty, create an empty dataframe with correct columns
+        return pd.DataFrame(columns=["ID", "Category", "Type", "Model", "Serial_Number", "Status", "Location", "Qty_On_Hand", "Qty_On_Order", "Reorder_Level", "Size"])
+    
+    df = pd.DataFrame(data)
+    # Safety checks
     if 'Size' not in df.columns:
         df['Size'] = ""
+    if 'Model' not in df.columns:
+        df['Model'] = ""
+    
+    df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0).astype(int)
     df = df.fillna("")
-else:
-    st.error("Inventory file not found!")
-    st.stop()
+    return df
+
+df = load_data()
 
 # --- DASHBOARD TABS ---
 tab1, tab2, tab3, tab4 = st.tabs(["📋 Current Inventory", "📈 Analytics", "🕒 Recent Activity", "➕ Add New Stock"])
