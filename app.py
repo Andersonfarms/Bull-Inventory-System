@@ -174,7 +174,7 @@ with tab4:
         f_type = st.selectbox("Type", ["Excavator", "Skid Steer"])
         f_model = st.selectbox("Model Name", ["12X", "18X", "22X", "25X", "40X", "1100X", "1200X", "Bucket", "Ripper", "Auger", "Rake", "Wood Splitter", "Flail Mower", "Forks", "Hedge Trimmers"])
         f_serial = st.text_input("Serial Number (VIN e.g., 2025-**-*****)")
-        f_size_choice = st.selectbox("Select Size", ["N/A", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom", "N/A"])
+        f_size_choice = st.selectbox("Select Size", ["8\", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Large", "Custom", "N/A"])
         f_custom_size = st.text_input("If Custom, enter size here:")
         f_size = f_custom_size if f_size_choice == "Custom" else f_size_choice
         f_loc = st.text_input("Location", value="Warehouse")
