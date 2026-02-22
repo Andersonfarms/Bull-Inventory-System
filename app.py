@@ -3,10 +3,10 @@ import pandas as pd
 import os
 from datetime import datetime
 import pytz
+import time  # <--- Just add this line right here!
 import gspread
 from google.oauth2.service_account import Credentials
 import json
-
 # --- CONFIGURATION ---
 LOG_FILE = "activity_log.csv"
 CENTRAL = pytz.timezone('US/Central')
