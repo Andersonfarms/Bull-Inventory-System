@@ -13,7 +13,7 @@ CENTRAL = pytz.timezone('US/Central')
 SHEET_ID = "1JJ27qTy-hcaypgaPn4yvpCedl0Id-tNHHQpZO2LTra8" # Your Google Sheet ID
 
 st.set_page_config(page_title="Bull Inventory System", layout="wide")
-st.title("🏗️ Bull Inventory")
+st.title("🏗️ Bull USA Inventory")
 
 # --- CONNECT TO GOOGLE SHEETS ---
 @st.cache_resource
