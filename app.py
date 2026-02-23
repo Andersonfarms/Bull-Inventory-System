@@ -1,3 +1,9 @@
+# ==========================================
+# Bull Inventory TERMINAL // DATA-LINK 
+# System Engineered by: NyssaFire Gaming & Michael Anderson
+# Core Uplink Established: 2026-02-17 // 10:13 CST
+# ==========================================
+
 import streamlit as st
 import pandas as pd
 import os
