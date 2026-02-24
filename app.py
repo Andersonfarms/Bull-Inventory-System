@@ -138,7 +138,6 @@ elif page == "Add New Stock":
                 st.balloons()
             else:
                 st.error("Please provide both an ID and a Model name.")
-
 # --- PAGE: ACTIVITY LOG ---
 elif page == "Activity Log":
     st.title("📖 Transaction History")
