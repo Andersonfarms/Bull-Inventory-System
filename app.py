@@ -95,21 +95,29 @@ elif page == "Add New Stock":
         col1, col2 = st.columns(2)
         with col1:
             new_id = st.text_input("Item ID (e.g., A-9PWW)")
-            new_model = st.text_input("Model Name (e.g., 12X, Rake, Bucket)")
+            
+            # --- DROPDOWN: MODELS ---
+            model_options = ["12X", "18X", "22X", "25X", "40X", "1100X", "Rake", "Bucket", "Auger", "Hammer", "Other"]
+            new_model = st.selectbox("Model Name", model_options)
+            
             new_type = st.selectbox("Machine Type", ["Excavator", "Skid Steer", "Other"])
             new_qty = st.number_input("Quantity", min_value=1, step=1)
+            
         with col2:
             new_cat = st.selectbox("Category", ["Machine", "Attachment", "Parts", "Other"])
-            new_size = st.text_input("Size (e.g., 8\", 12\", Small, Large, N/A)")
+            
+            # --- DROPDOWN: SIZES ---
+            size_options = ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"]
+            new_size = st.selectbox("Size", size_options)
+            
             new_loc = st.text_input("Location", value="Warehouse")
             
         submit = st.form_submit_button("Add to Supabase Inventory")
         
         if submit:
-            if new_id and new_model:
+            if new_id:
                 now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
                 
-                # 1. Insert into Inventory
                 new_item = {
                     "ID": new_id,
                     "Model": new_model,
@@ -123,7 +131,6 @@ elif page == "Add New Stock":
                 }
                 supabase.table("bull_inventory").insert(new_item).execute()
                 
-                # 2. Log Activity
                 log_entry = {
                     "Timestamp": now,
                     "Transaction #": f"TRX-{datetime.now().strftime('%f')}",
@@ -137,7 +144,7 @@ elif page == "Add New Stock":
                 st.success(f"✅ {new_model} ({new_size}) successfully stored in Supabase!")
                 st.balloons()
             else:
-                st.error("Please provide both an ID and a Model name.")
+                st.error("Please provide an Item ID.")
 # --- PAGE: ACTIVITY LOG ---
 elif page == "Activity Log":
     st.title("📖 Transaction History")
