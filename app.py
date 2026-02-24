@@ -45,28 +45,46 @@ if page == "Dashboard":
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Models", len(df))
         
-        # Using your exact Supabase column name: Qty_On_Hand
         target_qty_col = 'Qty_On_Hand'
-        
         if target_qty_col in df.columns:
-            # Convert to numeric just in case there are strings, then sum
             total_units = pd.to_numeric(df[target_qty_col], errors='coerce').sum()
             col2.metric("Total Units", int(total_units))
-        else:
-            col2.metric("Total Units", "Error: Col Missing")
-            
+        
         col3.metric("Categories", len(df['Category'].unique()) if 'Category' in df.columns else 0)
+
+        # --- NEW: FLEET BREAKDOWN ---
+        st.markdown("### 📊 Fleet Breakdown")
+        breakdown_col1, breakdown_col2 = st.columns(2)
+        
+        with breakdown_col1:
+            if 'Type' in df.columns:
+                st.write("**By Machine Type:**")
+                # Group by Type and sum the Qty_On_Hand
+                type_counts = df.groupby('Type')[target_qty_col].sum().reset_index()
+                st.dataframe(type_counts, hide_index=True, use_container_width=True)
+        
+        with breakdown_col2:
+            if 'Category' in df.columns:
+                st.write("**By Category:**")
+                # Group by Category and sum the Qty_On_Hand
+                cat_counts = df.groupby('Category')[target_qty_col].sum().reset_index()
+                st.dataframe(cat_counts, hide_index=True, use_container_width=True)
+
         st.markdown("---")
         
         # Search and Table
-        search = st.text_input("🔍 Search by Model or ID:")
+        search = st.text_input("🔍 Search by Model, Type, or ID:")
         if search:
-            df = df[df['Model'].str.contains(search, case=False) | df['ID'].str.contains(search, case=False)]
+            # Enhanced search to include the 'Type' column
+            df = df[
+                df['Model'].str.contains(search, case=False) | 
+                df['ID'].str.contains(search, case=False) |
+                (df['Type'].str.contains(search, case=False) if 'Type' in df.columns else False)
+            ]
         
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.warning("No inventory found in Supabase.")
-
 # --- PAGE: ADD NEW STOCK ---
 elif page == "Add New Stock":
     st.title("➕ Register New Inventory")
