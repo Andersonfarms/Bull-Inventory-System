@@ -118,33 +118,40 @@ elif page == "Add New Stock":
             if new_id:
                 now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
                 
+                # --- 1. PREPARE DATA (MATCHING SUPABASE EXACTLY) ---
                 new_item = {
                     "ID": new_id,
                     "Model": new_model,
                     "Type": new_type,
-                    "Qty_On_Hand": int(new_qty),
+                    "Qty_On_Hand": int(new_qty), # Match your 'int8' column in Supabase
                     "Location": new_loc,
                     "Category": new_cat,
                     "Size": new_size,
                     "Status": "Available",
                     "Last_Updated": now
                 }
-                supabase.table("bull_inventory").insert(new_item).execute()
                 
-                log_entry = {
-                    "Timestamp": now,
-                    "Transaction #": f"TRX-{datetime.now().strftime('%f')}",
-                    "ID": new_id,
-                    "Model": new_model,
-                    "Change": f"Added {new_qty} units ({new_size})",
-                    "User": "Admin"
-                }
-                supabase.table("bull_activity_log").insert(log_entry).execute()
-                
-                st.success(f"✅ {new_model} ({new_size}) successfully stored in Supabase!")
-                st.balloons()
+                try:
+                    # --- 2. INSERT INTO INVENTORY ---
+                    supabase.table("bull_inventory").insert(new_item).execute()
+                    
+                    # --- 3. LOG ACTIVITY ---
+                    log_entry = {
+                        "Timestamp": now,
+                        "ID": new_id,
+                        "Model": new_model,
+                        "Change": f"Added {new_qty} units ({new_size})",
+                        "User": "Admin"
+                    }
+                    supabase.table("bull_activity_log").insert(log_entry).execute()
+                    
+                    st.success(f"✅ {new_model} ({new_size}) successfully stored in Supabase!")
+                    st.balloons()
+                except Exception as e:
+                    st.error(f"Database Error: {e}")
             else:
                 st.error("Please provide an Item ID.")
+                
 # --- PAGE: ACTIVITY LOG ---
 elif page == "Activity Log":
     st.title("📖 Transaction History")
