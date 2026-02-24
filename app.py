@@ -45,13 +45,15 @@ if page == "Dashboard":
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Models", len(df))
         
-        # Check for 'Quantity' or 'quantity' (Supabase sometimes changes case)
-        qty_col = 'Quantity' if 'Quantity' in df.columns else 'quantity'
-        if qty_col in df.columns:
-            total_units = pd.to_numeric(df[qty_col], errors='coerce').sum()
+        # Using your exact Supabase column name: Qty_On_Hand
+        target_qty_col = 'Qty_On_Hand'
+        
+        if target_qty_col in df.columns:
+            # Convert to numeric just in case there are strings, then sum
+            total_units = pd.to_numeric(df[target_qty_col], errors='coerce').sum()
             col2.metric("Total Units", int(total_units))
         else:
-            col2.metric("Total Units", "0")
+            col2.metric("Total Units", "Error: Col Missing")
             
         col3.metric("Categories", len(df['Category'].unique()) if 'Category' in df.columns else 0)
         st.markdown("---")
