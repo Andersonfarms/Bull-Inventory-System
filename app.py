@@ -33,7 +33,6 @@ def load_activity():
 # --- 3. SIDEBAR & LOGO ---
 st.sidebar.image("bull.png", width=200)
 st.sidebar.title("Navigation")
-# ONLY ONE RADIO BUTTON FOR THE ENTIRE APP
 page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
 
 # --- PAGE: DASHBOARD ---
@@ -74,7 +73,7 @@ if page == "Dashboard":
 
         st.markdown("---")
         
-        # Search and Table (Bulletproofed against empty cells)
+        # Search and Table 
         search = st.text_input("🔍 Search by Model, Type, or ID:")
         if search:
             mask = pd.Series(False, index=df.index)
@@ -98,21 +97,15 @@ elif page == "Add New Stock":
         col1, col2 = st.columns(2)
         with col1:
             new_id = st.text_input("Item ID (e.g., A-9PWW)")
-            
-            # DROPDOWN: MODELS (Updated with your specific equipment)
             model_options = ["12X", "18X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Other"]
             new_model = st.selectbox("Model Name", model_options)
-            
             new_type = st.selectbox("Machine Type", ["Excavator", "Skid Steer", "Other"])
             new_qty = st.number_input("Quantity", min_value=1, step=1)
             
         with col2:
             new_cat = st.selectbox("Category", ["Machine", "Attachment", "Parts", "Other"])
-            
-            # DROPDOWN: SIZES
             size_options = ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"]
             new_size = st.selectbox("Size", size_options)
-            
             new_loc = st.text_input("Location", value="Warehouse")
             
         submit = st.form_submit_button("Add to Supabase Inventory")
@@ -120,8 +113,9 @@ elif page == "Add New Stock":
         if submit:
             if new_id:
                 now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                # GENERATE TRANSACTION ID
+                trx_id = f"TRX-{datetime.now().strftime('%f')}" 
                 
-                # EXACT MATCH FOR SUPABASE COLUMNS
                 new_item = {
                     "ID": new_id,
                     "Model": new_model,
@@ -136,7 +130,9 @@ elif page == "Add New Stock":
                 try:
                     supabase.table("bull_inventory").insert(new_item).execute()
                     
+                    # LOG ENTRY (NOW INCLUDES TRANSACTION #)
                     log_entry = {
+                        "Transaction #": trx_id,
                         "Timestamp": now,
                         "ID": new_id,
                         "Model": new_model,
@@ -161,7 +157,6 @@ elif page == "Update Inventory":
     df = load_inventory()
     
     if not df.empty and 'ID' in df.columns:
-        # Select the Item to Update
         item_list = df['ID'].dropna().tolist()
         selected_id = st.selectbox("Select Item ID to Update", item_list)
         
@@ -189,18 +184,21 @@ elif page == "Update Inventory":
                 
                 if update_btn:
                     now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                    # GENERATE TRANSACTION ID
+                    trx_id = f"TRX-{datetime.now().strftime('%f')}"
                     
                     try:
-                        # UPDATE SUPABASE
                         supabase.table("bull_inventory").update({
                             "Qty_On_Hand": int(new_qty),
                             "Location": new_loc,
                             "Status": new_status
                         }).eq("ID", selected_id).execute()
                         
-                        # LOG THE CHANGE
                         change_desc = f"Updated: Qty {current_qty}->{new_qty} | Loc {current_loc}->{new_loc} | Status {current_status}->{new_status}"
+                        
+                        # LOG ENTRY (NOW INCLUDES TRANSACTION #)
                         log_entry = {
+                            "Transaction #": trx_id,
                             "Timestamp": now,
                             "ID": selected_id,
                             "Model": current_item.get('Model', 'Unknown'),
