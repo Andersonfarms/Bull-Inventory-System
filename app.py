@@ -95,11 +95,13 @@ elif page == "Add New Stock":
         col1, col2 = st.columns(2)
         with col1:
             new_id = st.text_input("Item ID (e.g., A-9PWW)")
-            new_model = st.text_input("Model Name")
+            new_model = st.text_input("Model Name (e.g., 12X, Rake, Bucket)")
+            new_type = st.selectbox("Machine Type", ["Excavator", "Skid Steer", "Other"])
             new_qty = st.number_input("Quantity", min_value=1, step=1)
         with col2:
-            new_cat = st.selectbox("Category", ["Bucket", "Attachment", "Machine", "Parts", "Other"])
-            new_loc = st.text_input("Location")
+            new_cat = st.selectbox("Category", ["Machine", "Attachment", "Parts", "Other"])
+            new_size = st.text_input("Size (e.g., 8\", 12\", Small, Large, N/A)")
+            new_loc = st.text_input("Location", value="Warehouse")
             
         submit = st.form_submit_button("Add to Supabase Inventory")
         
@@ -111,12 +113,15 @@ elif page == "Add New Stock":
                 new_item = {
                     "ID": new_id,
                     "Model": new_model,
-                    "Qty_On_Hand": int(new_qty), # Updated name here
+                    "Type": new_type,
+                    "Qty_On_Hand": int(new_qty),
                     "Location": new_loc,
                     "Category": new_cat,
-                    "Status": "In Stock",
+                    "Size": new_size,
+                    "Status": "Available",
                     "Last_Updated": now
                 }
+                supabase.table("bull_inventory").insert(new_item).execute()
                 
                 # 2. Log Activity
                 log_entry = {
@@ -124,12 +129,12 @@ elif page == "Add New Stock":
                     "Transaction #": f"TRX-{datetime.now().strftime('%f')}",
                     "ID": new_id,
                     "Model": new_model,
-                    "Change": f"Added {new_qty} units",
+                    "Change": f"Added {new_qty} units ({new_size})",
                     "User": "Admin"
                 }
                 supabase.table("bull_activity_log").insert(log_entry).execute()
                 
-                st.success(f"✅ {new_model} successfully stored in Supabase!")
+                st.success(f"✅ {new_model} ({new_size}) successfully stored in Supabase!")
                 st.balloons()
             else:
                 st.error("Please provide both an ID and a Model name.")
