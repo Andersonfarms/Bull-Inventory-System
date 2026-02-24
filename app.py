@@ -57,11 +57,13 @@ if page == "Dashboard":
         breakdown_col1, breakdown_col2 = st.columns(2)
         
         with breakdown_col1:
-            if 'Type' in df.columns:
-                st.write("**By Machine Type:**")
-                # Group by Type and sum the Qty_On_Hand
-                type_counts = df.groupby('Type')[target_qty_col].sum().reset_index()
-                st.dataframe(type_counts, hide_index=True, use_container_width=True)
+            if 'Model' in df.columns:
+                st.write("**By Specific Model:**")
+                # Group by Model and sum the Qty_On_Hand
+                model_counts = df.groupby('Model')[target_qty_col].sum().reset_index()
+                # Sort it so the highest quantities are at the top
+                model_counts = model_counts.sort_values(by=target_qty_col, ascending=False)
+                st.dataframe(model_counts, hide_index=True, use_container_width=True)
         
         with breakdown_col2:
             if 'Category' in df.columns:
