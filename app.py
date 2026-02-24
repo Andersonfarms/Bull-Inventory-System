@@ -37,6 +37,7 @@ page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Activity Log"])
 
 # --- PAGE: DASHBOARD ---
 if page == "Dashboard":
+    page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
     st.title("🏗️ Bull Inventory Dashboard")
     df = load_inventory()
     
@@ -159,3 +160,58 @@ elif page == "Activity Log":
         st.dataframe(log_df, use_container_width=True, hide_index=True)
     else:
         st.info("No activity recorded yet.")
+
+# --- PAGE: UPDATE INVENTORY ---
+elif page == "Update Inventory":
+    st.title("🔄 Update Existing Stock")
+    df = load_inventory()
+    
+    if not df.empty:
+        # 1. Select the Item to Update
+        item_list = df['ID'].tolist()
+        selected_id = st.selectbox("Select Item ID to Update", item_list)
+        
+        # Pull current details for the selected item
+        current_item = df[df['ID'] == selected_id].iloc[0]
+        st.info(f"Currently Updating: **{current_item['Model']}** ({current_item.get('Size', 'N/A')}) at {current_item['Location']}")
+        
+        with st.form("update_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                # Pre-fill with current values
+                new_qty = st.number_input("New Quantity", value=int(current_item['Qty_On_Hand']), min_value=0)
+                new_loc = st.text_input("New Location", value=current_item['Location'])
+            with col2:
+                new_status = st.selectbox("Update Status", ["Available", "Sold", "On Rent", "Maintenance", "Damaged"], 
+                                          index=["Available", "Sold", "On Rent", "Maintenance", "Damaged"].index(current_item['Status']) if current_item['Status'] in ["Available", "Sold", "On Rent", "Maintenance", "Damaged"] else 0)
+            
+            update_btn = st.form_submit_button("Save Changes to Supabase")
+            
+            if update_btn:
+                now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                
+                try:
+                    # --- 1. UPDATE SUPABASE ---
+                    supabase.table("bull_inventory").update({
+                        "Qty_On_Hand": int(new_qty),
+                        "Location": new_loc,
+                        "Status": new_status
+                    }).eq("ID", selected_id).execute()
+                    
+                    # --- 2. LOG THE CHANGE ---
+                    change_desc = f"Updated: Qty {current_item['Qty_On_Hand']}->{new_qty} | Loc {current_item['Location']}->{new_loc} | Status {current_item['Status']}->{new_status}"
+                    log_entry = {
+                        "Timestamp": now,
+                        "ID": selected_id,
+                        "Model": current_item['Model'],
+                        "Change": change_desc,
+                        "User": "Admin"
+                    }
+                    supabase.table("bull_activity_log").insert(log_entry).execute()
+                    
+                    st.success(f"✅ Successfully updated {selected_id}!")
+                    st.balloons()
+                except Exception as e:
+                    st.error(f"Database Error: {e}")
+    else:
+        st.warning("No inventory found to update.")
