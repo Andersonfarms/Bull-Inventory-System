@@ -33,14 +33,15 @@ def load_activity():
 # --- 3. SIDEBAR & LOGO ---
 st.sidebar.image("bull.png", width=200)
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Activity Log"])
+# ONLY ONE RADIO BUTTON FOR THE ENTIRE APP
+page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
 
 # --- PAGE: DASHBOARD ---
 if page == "Dashboard":
-   page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
-   df = load_inventory()
+    st.title("🏗️ Bull Inventory Dashboard")
+    df = load_inventory()
     
-if not df.empty:
+    if not df.empty:
         # Metrics
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Models", len(df))
@@ -49,168 +50,28 @@ if not df.empty:
         if target_qty_col in df.columns:
             total_units = pd.to_numeric(df[target_qty_col], errors='coerce').sum()
             col2.metric("Total Units", int(total_units))
-        
+        else:
+            col2.metric("Total Units", 0)
+            
         col3.metric("Categories", len(df['Category'].unique()) if 'Category' in df.columns else 0)
 
-        # --- NEW: FLEET BREAKDOWN ---
+        # --- FLEET BREAKDOWN ---
         st.markdown("### 📊 Fleet Breakdown")
         breakdown_col1, breakdown_col2 = st.columns(2)
         
         with breakdown_col1:
-            if 'Model' in df.columns:
+            if 'Model' in df.columns and target_qty_col in df.columns:
                 st.write("**By Specific Model:**")
-                # Group by Model and sum the Qty_On_Hand
                 model_counts = df.groupby('Model')[target_qty_col].sum().reset_index()
-                # Sort it so the highest quantities are at the top
                 model_counts = model_counts.sort_values(by=target_qty_col, ascending=False)
                 st.dataframe(model_counts, hide_index=True, use_container_width=True)
         
         with breakdown_col2:
-            if 'Category' in df.columns:
+            if 'Category' in df.columns and target_qty_col in df.columns:
                 st.write("**By Category:**")
-                # Group by Category and sum the Qty_On_Hand
                 cat_counts = df.groupby('Category')[target_qty_col].sum().reset_index()
                 st.dataframe(cat_counts, hide_index=True, use_container_width=True)
 
         st.markdown("---")
         
-        # Search and Table
-        search = st.text_input("🔍 Search by Model, Type, or ID:")
-        if search:
-            # Enhanced search to include the 'Type' column
-            df = df[
-                df['Model'].str.contains(search, case=False) | 
-                df['ID'].str.contains(search, case=False) |
-                (df['Type'].str.contains(search, case=False) if 'Type' in df.columns else False)
-            ]
-        
-        st.dataframe(df, use_container_width=True, hide_index=True)
-else:
-        st.warning("No inventory found in Supabase.")
-# --- PAGE: ADD NEW STOCK ---
-elif page == "Add New Stock":
-    st.title("➕ Register New Inventory")
-    
-    with st.form("add_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            new_id = st.text_input("Item ID (e.g., A-9PWW)")
-            
-            # --- DROPDOWN: MODELS ---
-            model_options = ["12X", "18X", "22X", "25X", "40X", "1100X", "Rake", "Bucket", "Auger", "Hammer", "Other"]
-            new_model = st.selectbox("Model Name", model_options)
-            
-            new_type = st.selectbox("Machine Type", ["Excavator", "Skid Steer", "Other"])
-            new_qty = st.number_input("Quantity", min_value=1, step=1)
-            
-        with col2:
-            new_cat = st.selectbox("Category", ["Machine", "Attachment", "Parts", "Other"])
-            
-            # --- DROPDOWN: SIZES ---
-            size_options = ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"]
-            new_size = st.selectbox("Size", size_options)
-            
-            new_loc = st.text_input("Location", value="Warehouse")
-            
-        submit = st.form_submit_button("Add to Supabase Inventory")
-        
-        if submit:
-            if new_id:
-                now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                
-                # --- 1. PREPARE DATA (MATCHING YOUR SUPABASE COLUMNS) ---
-                new_item = {
-                    "ID": new_id,
-                    "Model": new_model,
-                    "Type": new_type,
-                    "Qty_On_Hand": int(new_qty),
-                    "Location": new_loc,
-                    "Category": new_cat,
-                    "Size": new_size,
-                    "Status": "Available"
-                }
-                
-                try:
-                    # --- 2. INSERT INTO INVENTORY ---
-                    supabase.table("bull_inventory").insert(new_item).execute()
-                    
-                    # --- 3. LOG ACTIVITY ---
-                    log_entry = {
-                        "Timestamp": now,
-                        "ID": new_id,
-                        "Model": new_model,
-                        "Change": f"Added {new_qty} units ({new_size})",
-                        "User": "Admin"
-                    }
-                    supabase.table("bull_activity_log").insert(log_entry).execute()
-                    
-                    st.success(f"✅ {new_model} ({new_size}) successfully stored in Supabase!")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"Database Error: {e}")
-            else:
-                st.error("Please provide an Item ID.")
-                
-# --- PAGE: ACTIVITY LOG ---
-elif page == "Activity Log":
-    st.title("📖 Transaction History")
-    log_df = load_activity()
-    if not log_df.empty:
-        st.dataframe(log_df, use_container_width=True, hide_index=True)
-    else:
-        st.info("No activity recorded yet.")
-
-# --- PAGE: UPDATE INVENTORY ---
-elif page == "Update Inventory":
-    st.title("🔄 Update Existing Stock")
-    df = load_inventory()
-    
-    if not df.empty:
-        # 1. Select the Item to Update
-        item_list = df['ID'].tolist()
-        selected_id = st.selectbox("Select Item ID to Update", item_list)
-        
-        # Pull current details for the selected item
-        current_item = df[df['ID'] == selected_id].iloc[0]
-        st.info(f"Currently Updating: **{current_item['Model']}** ({current_item.get('Size', 'N/A')}) at {current_item['Location']}")
-        
-        with st.form("update_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                # Pre-fill with current values
-                new_qty = st.number_input("New Quantity", value=int(current_item['Qty_On_Hand']), min_value=0)
-                new_loc = st.text_input("New Location", value=current_item['Location'])
-            with col2:
-                new_status = st.selectbox("Update Status", ["Available", "Sold", "On Rent", "Maintenance", "Damaged"], 
-                                          index=["Available", "Sold", "On Rent", "Maintenance", "Damaged"].index(current_item['Status']) if current_item['Status'] in ["Available", "Sold", "On Rent", "Maintenance", "Damaged"] else 0)
-            
-            update_btn = st.form_submit_button("Save Changes to Supabase")
-            
-            if update_btn:
-                now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                
-                try:
-                    # --- 1. UPDATE SUPABASE ---
-                    supabase.table("bull_inventory").update({
-                        "Qty_On_Hand": int(new_qty),
-                        "Location": new_loc,
-                        "Status": new_status
-                    }).eq("ID", selected_id).execute()
-                    
-                    # --- 2. LOG THE CHANGE ---
-                    change_desc = f"Updated: Qty {current_item['Qty_On_Hand']}->{new_qty} | Loc {current_item['Location']}->{new_loc} | Status {current_item['Status']}->{new_status}"
-                    log_entry = {
-                        "Timestamp": now,
-                        "ID": selected_id,
-                        "Model": current_item['Model'],
-                        "Change": change_desc,
-                        "User": "Admin"
-                    }
-                    supabase.table("bull_activity_log").insert(log_entry).execute()
-                    
-                    st.success(f"✅ Successfully updated {selected_id}!")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"Database Error: {e}")
-    else:
-        st.warning("No inventory found to update.")
+        # Search and Table (Bulletproofed against empty cells)
