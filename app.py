@@ -118,17 +118,16 @@ elif page == "Add New Stock":
             if new_id:
                 now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
                 
-                # --- 1. PREPARE DATA (MATCHING SUPABASE EXACTLY) ---
+                # --- 1. PREPARE DATA (MATCHING YOUR SUPABASE COLUMNS) ---
                 new_item = {
                     "ID": new_id,
                     "Model": new_model,
                     "Type": new_type,
-                    "Qty_On_Hand": int(new_qty), # Match your 'int8' column in Supabase
+                    "Qty_On_Hand": int(new_qty),
                     "Location": new_loc,
                     "Category": new_cat,
                     "Size": new_size,
-                    "Status": "Available",
-                    "Last_Updated": now
+                    "Status": "Available"
                 }
                 
                 try:
