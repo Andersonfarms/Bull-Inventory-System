@@ -40,7 +40,7 @@ if page == "Dashboard":
    page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
    df = load_inventory()
     
-    if not df.empty:
+if not df.empty:
         # Metrics
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Models", len(df))
