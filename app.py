@@ -91,13 +91,12 @@ elif page == "Add New Stock":
                 new_item = {
                     "ID": new_id,
                     "Model": new_model,
-                    "Quantity": int(new_qty),
+                    "Qty_On_Hand": int(new_qty), # Updated name here
                     "Location": new_loc,
                     "Category": new_cat,
                     "Status": "In Stock",
                     "Last_Updated": now
                 }
-                supabase.table("bull_inventory").insert(new_item).execute()
                 
                 # 2. Log Activity
                 log_entry = {
