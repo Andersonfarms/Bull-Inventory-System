@@ -33,7 +33,7 @@ def load_activity():
 # --- 3. SIDEBAR & LOGO ---
 st.sidebar.image("bull.png", width=200)
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
+page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Sell Inventory", "Update Inventory", "Activity Log"])
 
 # --- PAGE: DASHBOARD ---
 if page == "Dashboard":
@@ -113,7 +113,6 @@ elif page == "Add New Stock":
         if submit:
             if new_id:
                 now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                # GENERATE TRANSACTION ID
                 trx_id = f"TRX-{datetime.now().strftime('%f')}" 
                 
                 new_item = {
@@ -130,7 +129,6 @@ elif page == "Add New Stock":
                 try:
                     supabase.table("bull_inventory").insert(new_item).execute()
                     
-                    # LOG ENTRY (NOW INCLUDES TRANSACTION #)
                     log_entry = {
                         "Transaction #": trx_id,
                         "Timestamp": now,
@@ -150,6 +148,70 @@ elif page == "Add New Stock":
                         st.error(f"Database Error: {e}")
             else:
                 st.error("Please provide an Item ID.")
+
+# --- PAGE: SELL INVENTORY ---
+elif page == "Sell Inventory":
+    st.title("🛒 Sell Inventory")
+    df = load_inventory()
+    
+    if not df.empty and 'ID' in df.columns:
+        # Filter for items that actually have quantity > 0
+        df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0)
+        available_items = df[df['Qty_On_Hand'] > 0]
+        
+        if not available_items.empty:
+            item_list = available_items['ID'].dropna().tolist()
+            selected_id = st.selectbox("Select Item ID to Sell", item_list)
+            
+            if selected_id:
+                current_item = available_items[available_items['ID'] == selected_id].iloc[0]
+                current_qty = int(current_item['Qty_On_Hand'])
+                
+                st.info(f"Selling: **{current_item.get('Model', 'Unknown')}** ({current_item.get('Size', 'N/A')}) | Currently in stock: **{current_qty}**")
+                
+                with st.form("sell_form"):
+                    sell_qty = st.number_input("Quantity Sold", min_value=1, max_value=current_qty, step=1)
+                    buyer_notes = st.text_input("Buyer Name / Sale Notes (Optional)")
+                    
+                    sell_btn = st.form_submit_button("Process Sale")
+                    
+                    if sell_btn:
+                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                        trx_id = f"TRX-{datetime.now().strftime('%f')}"
+                        
+                        new_qty = current_qty - sell_qty
+                        # Auto-update status to 'Sold' if they bought the last one
+                        new_status = "Sold" if new_qty == 0 else current_item.get('Status', 'Available')
+                        
+                        try:
+                            # 1. Update Inventory Table
+                            supabase.table("bull_inventory").update({
+                                "Qty_On_Hand": new_qty,
+                                "Status": new_status
+                            }).eq("ID", selected_id).execute()
+                            
+                            # 2. Log the Sale
+                            notes_str = f" | Notes: {buyer_notes}" if buyer_notes else ""
+                            change_desc = f"SOLD {sell_qty} units. Remaining: {new_qty}{notes_str}"
+                            
+                            log_entry = {
+                                "Transaction #": trx_id,
+                                "Timestamp": now,
+                                "ID": selected_id,
+                                "Model": current_item.get('Model', 'Unknown'),
+                                "Change": change_desc,
+                                "User": "Admin"
+                            }
+                            supabase.table("bull_activity_log").insert(log_entry).execute()
+                            
+                            st.success(f"✅ Successfully sold {sell_qty}x {current_item.get('Model', 'Unknown')}!")
+                            st.balloons()
+                        except Exception as e:
+                            st.error(f"Database Error: {e}")
+        else:
+            st.warning("No items currently available to sell (All quantities are 0).")
+    else:
+        st.warning("No inventory found.")
 
 # --- PAGE: UPDATE INVENTORY ---
 elif page == "Update Inventory":
@@ -184,7 +246,6 @@ elif page == "Update Inventory":
                 
                 if update_btn:
                     now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                    # GENERATE TRANSACTION ID
                     trx_id = f"TRX-{datetime.now().strftime('%f')}"
                     
                     try:
@@ -196,7 +257,6 @@ elif page == "Update Inventory":
                         
                         change_desc = f"Updated: Qty {current_qty}->{new_qty} | Loc {current_loc}->{new_loc} | Status {current_status}->{new_status}"
                         
-                        # LOG ENTRY (NOW INCLUDES TRANSACTION #)
                         log_entry = {
                             "Transaction #": trx_id,
                             "Timestamp": now,
