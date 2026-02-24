@@ -85,7 +85,7 @@ if not df.empty:
             ]
         
         st.dataframe(df, use_container_width=True, hide_index=True)
- else:
+else:
         st.warning("No inventory found in Supabase.")
 # --- PAGE: ADD NEW STOCK ---
 elif page == "Add New Stock":
