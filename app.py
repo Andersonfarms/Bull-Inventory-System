@@ -44,9 +44,16 @@ if page == "Dashboard":
         # Metrics
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Models", len(df))
-        col2.metric("Total Units", int(df['Quantity'].sum()))
-        col3.metric("Categories", len(df['Category'].unique()))
         
+        # Check for 'Quantity' or 'quantity' (Supabase sometimes changes case)
+        qty_col = 'Quantity' if 'Quantity' in df.columns else 'quantity'
+        if qty_col in df.columns:
+            total_units = pd.to_numeric(df[qty_col], errors='coerce').sum()
+            col2.metric("Total Units", int(total_units))
+        else:
+            col2.metric("Total Units", "0")
+            
+        col3.metric("Categories", len(df['Category'].unique()) if 'Category' in df.columns else 0)
         st.markdown("---")
         
         # Search and Table
