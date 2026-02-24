@@ -38,8 +38,7 @@ page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Activity Log"])
 # --- PAGE: DASHBOARD ---
 if page == "Dashboard":
    page = st.sidebar.radio("Go to", ["Dashboard", "Add New Stock", "Update Inventory", "Activity Log"])
-    
-    df = load_inventory()
+   df = load_inventory()
     
     if not df.empty:
         # Metrics
