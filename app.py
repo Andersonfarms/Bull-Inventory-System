@@ -1,5 +1,5 @@
 # ==========================================
-# Bull Inventory TERMINAL // DATA-LINK v2.0
+# Bull Inventory TERMINAL // DATA-LINK v2.1
 # System Engineered by: NyssaFire Gaming & Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
@@ -32,9 +32,6 @@ tactical_css = """
     font-family: 'Courier New', Courier, monospace;
 }
 
-/* ---------------------------------------------------------
-   TACTICAL BUTTON OVERRIDE (EDI STYLE)
---------------------------------------------------------- */
 div[data-testid="stButton"] > button,
 div[data-testid="stFormSubmitButton"] > button {
     background-color: transparent !important;
@@ -57,9 +54,6 @@ div[data-testid="stFormSubmitButton"] > button:active {
     border-color: var(--accent-orange) !important;
 }
 
-/* ---------------------------------------------------------
-   SIDEBAR HEADERS
---------------------------------------------------------- */
 .sidebar-header {
     color: var(--text-muted);
     font-size: 0.85rem;
@@ -113,6 +107,7 @@ st.sidebar.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_
 st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
 st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
 st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
+st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
 st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
@@ -157,7 +152,7 @@ if page == "Dashboard":
         st.warning("No inventory found in Supabase.")
 
 # --- PAGES: THE DIGITAL LEDGERS ---
-elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger"]:
+elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
     st.title(f"📂 {page}")
     df = load_inventory()
     
@@ -169,6 +164,8 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger"]:
             df = df[df['Category'] == 'Attachment']
         elif page == "Parts Ledger":
             df = df[df['Category'] == 'Parts']
+        elif page == "Damaged Ledger":
+            df = df[df['Status'] == 'Damaged']
             
         search = st.text_input(f"🔍 Search {page}:")
         if search:
@@ -200,3 +197,88 @@ elif page == "Add New Stock":
             size_options = ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"]
             new_size = st.selectbox("Size", size_options)
             new_loc = st.text_input("Location", value="Warehouse")
+            
+        submit = st.form_submit_button("Commit to Database")
+        
+        if submit and new_id:
+            now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+            trx_id = f"TRX-{datetime.now().strftime('%f')}" 
+            new_item = {"ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), "Location": new_loc, "Category": new_cat, "Size": new_size, "Status": "Available"}
+            try:
+                supabase.table("bull_inventory").insert(new_item).execute()
+                log_entry = {"Transaction #": trx_id, "Timestamp": now, "ID": new_id, "Model": new_model, "Change": f"Added {new_qty} units ({new_size})", "User": "Admin"}
+                supabase.table("bull_activity_log").insert(log_entry).execute()
+                st.success(f"✅ {new_model} successfully stored!")
+            except Exception as e:
+                st.error(f"Database Error: {e}")
+
+# --- PAGE: SELL INVENTORY ---
+elif page == "Sell Inventory":
+    st.title("🛒 Logistics: Dispatch / Sell")
+    df = load_inventory()
+    if not df.empty and 'ID' in df.columns:
+        df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0)
+        available_items = df[df['Qty_On_Hand'] > 0]
+        if not available_items.empty:
+            selected_id = st.selectbox("Select Item ID to Dispatch", available_items['ID'].dropna().tolist())
+            if selected_id:
+                current_item = available_items[available_items['ID'] == selected_id].iloc[0]
+                current_qty = int(current_item['Qty_On_Hand'])
+                st.info(f"Target: **{current_item.get('Model', 'Unknown')}** | Current Stock: **{current_qty}**")
+                
+                with st.form("sell_form"):
+                    sell_qty = st.number_input("Quantity Dispatched", min_value=1, max_value=current_qty, step=1)
+                    buyer_notes = st.text_input("Dispatch Notes / Buyer Name")
+                    sell_btn = st.form_submit_button("Execute Dispatch")
+                    
+                    if sell_btn:
+                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                        new_qty = current_qty - sell_qty
+                        new_status = "Sold" if new_qty == 0 else current_item.get('Status', 'Available')
+                        try:
+                            supabase.table("bull_inventory").update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
+                            log_entry = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": selected_id, "Model": current_item.get('Model', 'Unknown'), "Change": f"DISPATCHED {sell_qty} units. Remaining: {new_qty}", "User": "Admin"}
+                            supabase.table("bull_activity_log").insert(log_entry).execute()
+                            st.success(f"✅ Dispatch executed for {sell_qty}x {current_item.get('Model', 'Unknown')}!")
+                        except Exception as e:
+                            st.error(f"Database Error: {e}")
+        else:
+            st.warning("No items currently available to dispatch.")
+
+# --- PAGE: UPDATE INVENTORY ---
+elif page == "Update Inventory":
+    st.title("🔄 Logistics: Update Status")
+    df = load_inventory()
+    if not df.empty and 'ID' in df.columns:
+        selected_id = st.selectbox("Select Item ID", df['ID'].dropna().tolist())
+        if selected_id:
+            current_item = df[df['ID'] == selected_id].iloc[0]
+            with st.form("update_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_qty = st.number_input("New Quantity", value=int(current_item.get('Qty_On_Hand', 0)), min_value=0)
+                    new_loc = st.text_input("New Location", value=str(current_item.get('Location', 'Warehouse')))
+                with col2:
+                    status_options = ["Available", "Sold", "On Rent", "Maintenance", "Damaged"]
+                    current_status = str(current_item.get('Status', 'Available'))
+                    if current_status not in status_options: status_options.append(current_status)
+                    new_status = st.selectbox("Update Status", status_options, index=status_options.index(current_status))
+                
+                if st.form_submit_button("Update Database"):
+                    try:
+                        supabase.table("bull_inventory").update({"Qty_On_Hand": int(new_qty), "Location": new_loc, "Status": new_status}).eq("ID", selected_id).execute()
+                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                        log_entry = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": selected_id, "Model": current_item.get('Model', 'Unknown'), "Change": f"Updated Status: {new_status}. Qty: {new_qty}", "User": "Admin"}
+                        supabase.table("bull_activity_log").insert(log_entry).execute()
+                        st.success(f"✅ Record updated successfully!")
+                    except Exception as e:
+                        st.error(f"Database Error: {e}")
+
+# --- PAGE: ACTIVITY LOG ---
+elif page == "Activity Log":
+    st.title("📖 Official Duty Log")
+    log_df = load_activity()
+    if not log_df.empty:
+        st.dataframe(log_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No activity recorded yet.")
