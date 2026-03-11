@@ -1,5 +1,5 @@
 # ==========================================
-# Bull Inventory TERMINAL // DATA-LINK v2.1
+# Bull Inventory TERMINAL // DATA-LINK v2.2
 # System Engineered by: NyssaFire Gaming & Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
@@ -174,6 +174,8 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged 
                 mask |= df['Model'].astype(str).str.contains(search, case=False, na=False)
             if 'ID' in df.columns:
                 mask |= df['ID'].astype(str).str.contains(search, case=False, na=False)
+            if 'Description' in df.columns:
+                mask |= df['Description'].astype(str).str.contains(search, case=False, na=False)
             df = df[mask]
             
         st.dataframe(df, use_container_width=True, hide_index=True)
@@ -196,6 +198,16 @@ elif page == "Add New Stock":
             new_cat = st.selectbox("Category", ["Machine", "Attachment", "Parts", "Other"])
             size_options = ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"]
             new_size = st.selectbox("Size", size_options)
+            
+            # --- NEW DESCRIPTION FIELD FOR PARTS ---
+            desc_options = [
+                "N/A", "Air Filter", "Oil Filter", "Hydraulic Filter", "Fuel Filter", 
+                "Hydraulic Hose", "O-Rings / Seals", "Track Assembly", "Sprocket / Idler", 
+                "Teeth / Cutting Edge", "Pins & Bushings", "Electrical Relay / Fuse", 
+                "Sensors", "Hardware / Fasteners", "Fluids / Grease", "Other"
+            ]
+            new_desc = st.selectbox("Part Description", desc_options)
+            
             new_loc = st.text_input("Location", value="Warehouse")
             
         submit = st.form_submit_button("Commit to Database")
@@ -203,10 +215,22 @@ elif page == "Add New Stock":
         if submit and new_id:
             now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
             trx_id = f"TRX-{datetime.now().strftime('%f')}" 
-            new_item = {"ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), "Location": new_loc, "Category": new_cat, "Size": new_size, "Status": "Available"}
+            
+            # Pack the description into the database payload
+            new_item = {
+                "ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), 
+                "Location": new_loc, "Category": new_cat, "Size": new_size, "Description": new_desc, 
+                "Status": "Available"
+            }
             try:
                 supabase.table("bull_inventory").insert(new_item).execute()
-                log_entry = {"Transaction #": trx_id, "Timestamp": now, "ID": new_id, "Model": new_model, "Change": f"Added {new_qty} units ({new_size})", "User": "Admin"}
+                
+                # Format the log entry to show the description if it's not N/A
+                desc_log = f" - {new_desc}" if new_desc != "N/A" else ""
+                log_entry = {
+                    "Transaction #": trx_id, "Timestamp": now, "ID": new_id, "Model": new_model, 
+                    "Change": f"Added {new_qty} units ({new_size}{desc_log})", "User": "Admin"
+                }
                 supabase.table("bull_activity_log").insert(log_entry).execute()
                 st.success(f"✅ {new_model} successfully stored!")
             except Exception as e:
