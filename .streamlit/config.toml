@@ -1,0 +1,15 @@
+[theme]
+# Primary accent for interactive elements (Buttons, Sliders, Highlights)
+primaryColor = "#ff5500"
+
+# Deep Black main background
+backgroundColor = "#0a0a0a"
+
+# Elevated Dark Grey for the sidebar and secondary containers
+secondaryBackgroundColor = "#1c1c1c"
+
+# Crisp White text
+textColor = "#ffffff"
+
+# Terminal font style
+font = "monospace"
