@@ -109,7 +109,7 @@ st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger
 st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
 
-st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="sidebar-header">LOGISTICS</div>', unsafe_allow_html=True)
 st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
 st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
 st.sidebar.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
