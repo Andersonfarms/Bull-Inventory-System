@@ -310,4 +310,4 @@ elif page == "Update Inventory":
         
         if selected_id:
             current_item = df[df['ID'] == selected_id].iloc[0]
-            st.info(f
+            st.info(f)
