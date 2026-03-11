@@ -1,5 +1,5 @@
 # ==========================================
-# Bull Inventory TERMINAL // DATA-LINK v2.2
+# Bull Inventory TERMINAL // DATA-LINK v2.3
 # System Engineered by: NyssaFire Gaming & Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
@@ -244,28 +244,93 @@ elif page == "Sell Inventory":
         df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0)
         available_items = df[df['Qty_On_Hand'] > 0]
         if not available_items.empty:
-            selected_id = st.selectbox("Select Item ID to Dispatch", available_items['ID'].dropna().tolist())
+            
+            selected_id = st.selectbox("Select Primary Item to Dispatch", available_items['ID'].dropna().tolist())
+            
             if selected_id:
                 current_item = available_items[available_items['ID'] == selected_id].iloc[0]
                 current_qty = int(current_item['Qty_On_Hand'])
                 st.info(f"Target: **{current_item.get('Model', 'Unknown')}** | Current Stock: **{current_qty}**")
                 
+                # Pre-gather attachment options for bundling
+                attachments_df = available_items[available_items['Category'] == 'Attachment']
+                # Exclude the primary item from the attachment list if it happens to be an attachment itself
+                attachments_df = attachments_df[attachments_df['ID'] != selected_id]
+                attachment_options = ["None"] + attachments_df['ID'].dropna().tolist()
+                
                 with st.form("sell_form"):
-                    sell_qty = st.number_input("Quantity Dispatched", min_value=1, max_value=current_qty, step=1)
-                    buyer_notes = st.text_input("Dispatch Notes / Buyer Name")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        sell_qty = st.number_input("Quantity Dispatched", min_value=1, max_value=current_qty, step=1)
+                        salesperson = st.selectbox("Salesperson", ["Fredrik L.", "Bailey A.", "Admin", "Other"])
+                        buyer_notes = st.text_input("Dispatch Notes / Buyer Name")
+                        
+                    with col2:
+                        transport_co = st.text_input("Transport Company", help="Browser autofill will remember previous entries.")
+                        st.markdown("**Bundle an Attachment?**")
+                        addon_id = st.selectbox("Select Add-on Attachment", attachment_options)
+                        addon_qty = st.number_input("Add-on Quantity", min_value=1, step=1)
+                        
                     sell_btn = st.form_submit_button("Execute Dispatch")
                     
                     if sell_btn:
                         now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
                         new_qty = current_qty - sell_qty
                         new_status = "Sold" if new_qty == 0 else current_item.get('Status', 'Available')
-                        try:
-                            supabase.table("bull_inventory").update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
-                            log_entry = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": selected_id, "Model": current_item.get('Model', 'Unknown'), "Change": f"DISPATCHED {sell_qty} units. Remaining: {new_qty}", "User": "Admin"}
-                            supabase.table("bull_activity_log").insert(log_entry).execute()
-                            st.success(f"✅ Dispatch executed for {sell_qty}x {current_item.get('Model', 'Unknown')}!")
-                        except Exception as e:
-                            st.error(f"Database Error: {e}")
+                        
+                        addon_success = True
+                        addon_log = ""
+                        
+                        # Process Add-on Attachment First
+                        if addon_id != "None":
+                            addon_item = available_items[available_items['ID'] == addon_id].iloc[0]
+                            addon_current_qty = int(addon_item['Qty_On_Hand'])
+                            
+                            if addon_qty > addon_current_qty:
+                                st.error(f"🚫 Cannot bundle {addon_qty}x of {addon_id}. Only {addon_current_qty} in stock!")
+                                addon_success = False
+                            else:
+                                addon_new_qty = addon_current_qty - addon_qty
+                                addon_new_status = "Sold" if addon_new_qty == 0 else addon_item.get('Status', 'Available')
+                                try:
+                                    supabase.table("bull_inventory").update({"Qty_On_Hand": addon_new_qty, "Status": addon_new_status}).eq("ID", addon_id).execute()
+                                    addon_log = f" | Bundled {addon_qty}x {addon_id}"
+                                    
+                                    # Log the attachment sale
+                                    log_entry_addon = {
+                                        "Transaction #": f"TRX-{datetime.now().strftime('%f')}-A", 
+                                        "Timestamp": now, 
+                                        "ID": addon_id, 
+                                        "Model": addon_item.get('Model', 'Unknown'), 
+                                        "Change": f"DISPATCHED {addon_qty} units (Bundled). Remaining: {addon_new_qty}", 
+                                        "User": salesperson
+                                    }
+                                    supabase.table("bull_activity_log").insert(log_entry_addon).execute()
+                                except Exception as e:
+                                    st.error(f"Database Error on Add-on: {e}")
+                                    addon_success = False
+
+                        # Process Primary Item if addon didn't fail
+                        if addon_success:
+                            try:
+                                supabase.table("bull_inventory").update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
+                                
+                                notes_str = f" | Buyer: {buyer_notes}" if buyer_notes else ""
+                                trans_str = f" | Trans: {transport_co}" if transport_co else ""
+                                full_change_log = f"DISPATCHED {sell_qty} units. Remaining: {new_qty}{addon_log}{notes_str}{trans_str}"
+                                
+                                log_entry = {
+                                    "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
+                                    "Timestamp": now, 
+                                    "ID": selected_id, 
+                                    "Model": current_item.get('Model', 'Unknown'), 
+                                    "Change": full_change_log, 
+                                    "User": salesperson
+                                }
+                                supabase.table("bull_activity_log").insert(log_entry).execute()
+                                st.success(f"✅ Dispatch executed for {sell_qty}x {current_item.get('Model', 'Unknown')}!")
+                            except Exception as e:
+                                st.error(f"Database Error: {e}")
         else:
             st.warning("No items currently available to dispatch.")
 
