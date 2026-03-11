@@ -12,6 +12,92 @@ from supabase import create_client, Client
 # --- 1. CONFIG & CONNECTION ---
 st.set_page_config(page_title="Bull Inventory System", page_icon="🏗️", layout="wide")
 
+# ==========================================================
+# TACTICAL UI THEME INJECTION
+# ==========================================================
+tactical_css = """
+<style>
+:root {
+    --bg-base: #0a0a0a;         /* Deep Black */
+    --surface-level: #1c1c1c;   /* Elevated Dark Grey for inventory cards */
+    --accent-orange: #ff5500;   /* High-Vis Tactical Orange */
+    --text-main: #ffffff;       /* Crisp White */
+    --text-muted: #888888;      /* Grey for secondary intel */
+    --border-grid: #333333;     /* Subtle grid lines */
+}
+
+/* Force Streamlit's main app container to use the Deep Black background */
+.stApp {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* ---------------------------------------------------------
+   INVENTORY CARDS (The Iron Roster)
+--------------------------------------------------------- */
+.inventory-card {
+    background-color: var(--surface-level);
+    border: 1px solid var(--border-grid);
+    border-left: 5px solid var(--accent-orange);
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+
+.inventory-card h2 {
+    color: var(--text-main);
+    margin-top: 0;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------
+   ACTION BUTTONS (e.g., The "Sell" Feature)
+--------------------------------------------------------- */
+.tactical-btn {
+    background-color: transparent;
+    color: var(--accent-orange);
+    border: 2px solid var(--accent-orange);
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s ease-in-out;
+    width: 100%; /* Finger-friendly for mobile */
+    margin-top: 10px;
+}
+
+.tactical-btn:active {
+    background-color: var(--accent-orange);
+    color: var(--bg-base);
+}
+
+/* ---------------------------------------------------------
+   DATA LABELS (Supabase Readouts)
+--------------------------------------------------------- */
+.data-label {
+    color: var(--accent-orange);
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.data-value {
+    color: var(--text-main);
+    font-size: 1rem;
+    margin-bottom: 10px;
+    display: block;
+}
+</style>
+"""
+
+# Execute the CSS Override
+st.markdown(tactical_css, unsafe_allow_html=True)
+
 @st.cache_resource
 def init_connection():
     url = st.secrets["SUPABASE_URL"]
@@ -224,61 +310,4 @@ elif page == "Update Inventory":
         
         if selected_id:
             current_item = df[df['ID'] == selected_id].iloc[0]
-            st.info(f"Currently Updating: **{current_item.get('Model', 'Unknown')}** ({current_item.get('Size', 'N/A')}) at {current_item.get('Location', 'Unknown')}")
-            
-            with st.form("update_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    current_qty = int(current_item.get('Qty_On_Hand', 0)) if pd.notna(current_item.get('Qty_On_Hand')) else 0
-                    new_qty = st.number_input("New Quantity", value=current_qty, min_value=0)
-                    
-                    current_loc = str(current_item.get('Location', 'Warehouse'))
-                    new_loc = st.text_input("New Location", value=current_loc)
-                with col2:
-                    status_options = ["Available", "Sold", "On Rent", "Maintenance", "Damaged"]
-                    current_status = str(current_item.get('Status', 'Available'))
-                    if current_status not in status_options:
-                        status_options.append(current_status)
-                    
-                    new_status = st.selectbox("Update Status", status_options, index=status_options.index(current_status))
-                
-                update_btn = st.form_submit_button("Save Changes to Supabase")
-                
-                if update_btn:
-                    now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                    trx_id = f"TRX-{datetime.now().strftime('%f')}"
-                    
-                    try:
-                        supabase.table("bull_inventory").update({
-                            "Qty_On_Hand": int(new_qty),
-                            "Location": new_loc,
-                            "Status": new_status
-                        }).eq("ID", selected_id).execute()
-                        
-                        change_desc = f"Updated: Qty {current_qty}->{new_qty} | Loc {current_loc}->{new_loc} | Status {current_status}->{new_status}"
-                        
-                        log_entry = {
-                            "Transaction #": trx_id,
-                            "Timestamp": now,
-                            "ID": selected_id,
-                            "Model": current_item.get('Model', 'Unknown'),
-                            "Change": change_desc,
-                            "User": "Admin"
-                        }
-                        supabase.table("bull_activity_log").insert(log_entry).execute()
-                        
-                        st.success(f"✅ Successfully updated {selected_id}!")
-                        st.balloons()
-                    except Exception as e:
-                        st.error(f"Database Error: {e}")
-    else:
-        st.warning("No inventory found to update.")
-
-# --- PAGE: ACTIVITY LOG ---
-elif page == "Activity Log":
-    st.title("📖 Transaction History")
-    log_df = load_activity()
-    if not log_df.empty:
-        st.dataframe(log_df, use_container_width=True, hide_index=True)
-    else:
-        st.info("No activity recorded yet.")
+            st.info(f
