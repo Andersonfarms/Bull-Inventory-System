@@ -126,7 +126,7 @@ st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_
 st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
 st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
 
-st.sidebar.markdown('<div class="sidebar-header">S-2 INTEL (TRACKING)</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
 st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
