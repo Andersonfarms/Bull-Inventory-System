@@ -179,7 +179,7 @@ if page == "Dashboard":
 
 # --- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
 elif page == "Inbound Freight":
-    st.title("🚢 S-2 Intel: Inbound Freight")
+    st.title("🚢Inbound Freight")
     
     def get_tracking_url(carrier, tracking_number):
         if carrier == "Maersk":
