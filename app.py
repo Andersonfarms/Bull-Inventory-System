@@ -1,5 +1,5 @@
 # ==========================================
-# Bull Inventory TERMINAL // DATA-LINK v2.4
+# Bull Inventory TERMINAL // DATA-LINK v2.5
 # System Engineered by: NyssaFire Gaming & Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
@@ -35,7 +35,7 @@ tactical_css = """
 div[data-testid="stButton"] > button,
 div[data-testid="stFormSubmitButton"] > button {
     background-color: transparent !important;
-    color: var(--text-main) !important; /* Changed from orange to white */
+    color: var(--text-main) !important; 
     border: 2px solid var(--accent-orange) !important;
     padding: 8px 15px !important;
     font-size: 0.95rem !important;
@@ -64,6 +64,25 @@ div[data-testid="stFormSubmitButton"] > button:active {
     border-bottom: 1px solid var(--border-grid);
     padding-bottom: 3px;
 }
+
+/* Custom Link Button for Tracking */
+.tracking-btn {
+    display: inline-block;
+    background-color: transparent;
+    color: var(--accent-orange) !important;
+    border: 1px solid var(--accent-orange);
+    padding: 5px 10px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.85rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    transition: 0.2s;
+}
+.tracking-btn:hover {
+    background-color: var(--accent-orange);
+    color: var(--bg-base) !important;
+}
 </style>
 """
 
@@ -87,6 +106,10 @@ def load_activity():
     response = supabase.table("bull_activity_log").select("*").order("Timestamp", desc=True).execute()
     return pd.DataFrame(response.data)
 
+def load_inbound():
+    response = supabase.table("bull_inbound_tracking").select("*").execute()
+    return pd.DataFrame(response.data)
+
 # --- 3. THE TACTICAL SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
     st.session_state.current_page = "Dashboard"
@@ -102,6 +125,9 @@ except:
 st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
 st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
 st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
+
+st.sidebar.markdown('<div class="sidebar-header">S-2 INTEL (TRACKING)</div>', unsafe_allow_html=True)
+st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
 st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
@@ -150,6 +176,78 @@ if page == "Dashboard":
                 st.dataframe(cat_counts, hide_index=True, use_container_width=True)
     else:
         st.warning("No inventory found in Supabase.")
+
+# --- PAGE: INBOUND FREIGHT (MAERSK TRACKING) ---
+elif page == "Inbound Freight":
+    st.title("🚢 S-2 Intel: Inbound Freight")
+    
+    # 1. Display Current Inbound Shipments
+    inbound_df = load_inbound()
+    if not inbound_df.empty:
+        active_shipments = inbound_df[inbound_df['Status'] != 'Arrived']
+        if not active_shipments.empty:
+            st.markdown("### 📡 Active Inbound Containers")
+            for index, row in active_shipments.iterrows():
+                with st.container():
+                    st.markdown(f"""
+                    <div style="border-left: 3px solid var(--accent-orange); padding-left: 10px; margin-bottom: 15px; background-color: var(--surface-level); padding: 15px; border-radius: 4px;">
+                        <h4 style="margin: 0; color: var(--text-main);">CONTAINER: {row['Tracking_Number']}</h4>
+                        <p style="margin: 5px 0; color: var(--text-muted); font-size: 0.9rem;">
+                            <strong>Carrier:</strong> {row['Carrier']} &nbsp;|&nbsp; 
+                            <strong>ETA:</strong> {row['ETA']} &nbsp;|&nbsp; 
+                            <strong>Contents:</strong> {row['Contents']}
+                        </p>
+                        <a href="https://www.maersk.com/tracking/{row['Tracking_Number']}" target="_blank" class="tracking-btn">
+                            [>> LIVE MAERSK UPLINK <<]
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("No active containers currently in transit.")
+            
+        # Optional: Mark as Arrived
+        st.markdown("---")
+        st.markdown("**Update Shipment Status**")
+        update_id = st.selectbox("Select Container to mark as 'Arrived'", inbound_df[inbound_df['Status'] != 'Arrived']['Tracking_Number'].tolist() if not active_shipments.empty else ["None"])
+        if update_id != "None":
+            if st.button("Mark as Arrived"):
+                try:
+                    supabase.table("bull_inbound_tracking").update({"Status": "Arrived"}).eq("Tracking_Number", update_id).execute()
+                    st.success(f"✅ Container {update_id} marked as Arrived. Please move contents to Add New Stock.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Database Error: {e}")
+    else:
+        st.info("No tracking data on file.")
+
+    st.markdown("---")
+    # 2. Add New Inbound Shipment
+    st.markdown("### ➕ Log New Inbound Container")
+    with st.form("inbound_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            tracking_num = st.text_input("Container / Tracking Number (e.g., MSKU1234567)")
+            carrier = st.selectbox("Carrier", ["Maersk", "MSC", "Hapag-Lloyd", "Evergreen", "Other"])
+        with col2:
+            contents = st.text_input("Primary Contents (e.g., 5x 18X Excavators, Parts)")
+            eta = st.text_input("Expected Time of Arrival (ETA)")
+            
+        submit_tracker = st.form_submit_button("Start Tracking")
+        
+        if submit_tracker and tracking_num:
+            new_shipment = {
+                "Tracking_Number": tracking_num,
+                "Carrier": carrier,
+                "Contents": contents,
+                "ETA": eta,
+                "Status": "In Transit"
+            }
+            try:
+                supabase.table("bull_inbound_tracking").insert(new_shipment).execute()
+                st.success(f"✅ Container {tracking_num} logged into tracking network!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Database Error: {e}")
 
 # --- PAGES: THE DIGITAL LEDGERS ---
 elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
