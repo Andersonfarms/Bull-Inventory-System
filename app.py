@@ -1,5 +1,5 @@
 # ==========================================
-# Bull Inventory TERMINAL // DATA-LINK v2.5
+# Bull Inventory TERMINAL // DATA-LINK v2.6
 # System Engineered by: NyssaFire Gaming & Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
@@ -177,10 +177,23 @@ if page == "Dashboard":
     else:
         st.warning("No inventory found in Supabase.")
 
-# --- PAGE: INBOUND FREIGHT (MAERSK TRACKING) ---
+# --- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
 elif page == "Inbound Freight":
     st.title("🚢 S-2 Intel: Inbound Freight")
     
+    def get_tracking_url(carrier, tracking_number):
+        if carrier == "Maersk":
+            return f"https://www.maersk.com/tracking/{tracking_number}"
+        elif carrier == "CMA-CGM":
+            return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={tracking_number}"
+        elif carrier == "MSC":
+            return f"https://www.msc.com/en/track-a-shipment?trackingNumber={tracking_number}"
+        elif carrier == "Hapag-Lloyd":
+            return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html?blno={tracking_number}"
+        else:
+            # Universal fallback for "Other" or unknown
+            return f"https://www.searates.com/container/tracking/?number={tracking_number}"
+
     # 1. Display Current Inbound Shipments
     inbound_df = load_inbound()
     if not inbound_df.empty:
@@ -188,6 +201,7 @@ elif page == "Inbound Freight":
         if not active_shipments.empty:
             st.markdown("### 📡 Active Inbound Containers")
             for index, row in active_shipments.iterrows():
+                tracking_url = get_tracking_url(row['Carrier'], row['Tracking_Number'])
                 with st.container():
                     st.markdown(f"""
                     <div style="border-left: 3px solid var(--accent-orange); padding-left: 10px; margin-bottom: 15px; background-color: var(--surface-level); padding: 15px; border-radius: 4px;">
@@ -197,8 +211,8 @@ elif page == "Inbound Freight":
                             <strong>ETA:</strong> {row['ETA']} &nbsp;|&nbsp; 
                             <strong>Contents:</strong> {row['Contents']}
                         </p>
-                        <a href="https://www.maersk.com/tracking/{row['Tracking_Number']}" target="_blank" class="tracking-btn">
-                            [>> LIVE MAERSK UPLINK <<]
+                        <a href="{tracking_url}" target="_blank" class="tracking-btn">
+                            [>> LIVE {row['Carrier'].upper()} UPLINK <<]
                         </a>
                     </div>
                     """, unsafe_allow_html=True)
@@ -227,7 +241,7 @@ elif page == "Inbound Freight":
         col1, col2 = st.columns(2)
         with col1:
             tracking_num = st.text_input("Container / Tracking Number (e.g., MSKU1234567)")
-            carrier = st.selectbox("Carrier", ["Maersk", "MSC", "Hapag-Lloyd", "Evergreen", "Other"])
+            carrier = st.selectbox("Carrier", ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"])
         with col2:
             contents = st.text_input("Primary Contents (e.g., 5x 18X Excavators, Parts)")
             eta = st.text_input("Expected Time of Arrival (ETA)")
@@ -331,141 +345,3 @@ elif page == "Add New Stock":
                 }
                 supabase.table("bull_activity_log").insert(log_entry).execute()
                 st.success(f"✅ {new_model} successfully stored!")
-            except Exception as e:
-                st.error(f"Database Error: {e}")
-
-# --- PAGE: SELL INVENTORY ---
-elif page == "Sell Inventory":
-    st.title("🛒 Logistics: Dispatch / Sell")
-    df = load_inventory()
-    if not df.empty and 'ID' in df.columns:
-        df['Qty_On_Hand'] = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').fillna(0)
-        available_items = df[df['Qty_On_Hand'] > 0]
-        if not available_items.empty:
-            
-            selected_id = st.selectbox("Select Primary Item to Dispatch", available_items['ID'].dropna().tolist())
-            
-            if selected_id:
-                current_item = available_items[available_items['ID'] == selected_id].iloc[0]
-                current_qty = int(current_item['Qty_On_Hand'])
-                st.info(f"Target: **{current_item.get('Model', 'Unknown')}** | Current Stock: **{current_qty}**")
-                
-                # Pre-gather attachment options for bundling
-                attachments_df = available_items[available_items['Category'] == 'Attachment']
-                # Exclude the primary item from the attachment list if it happens to be an attachment itself
-                attachments_df = attachments_df[attachments_df['ID'] != selected_id]
-                attachment_options = ["None"] + attachments_df['ID'].dropna().tolist()
-                
-                with st.form("sell_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        sell_qty = st.number_input("Quantity Dispatched", min_value=1, max_value=current_qty, step=1)
-                        salesperson = st.selectbox("Salesperson", ["Fredrik L.", "Bailey A.", "Admin", "Other"])
-                        buyer_notes = st.text_input("Dispatch Notes / Buyer Name")
-                        
-                    with col2:
-                        transport_co = st.text_input("Transport Company", help="Browser autofill will remember previous entries.")
-                        st.markdown("**Bundle an Attachment?**")
-                        addon_id = st.selectbox("Select Add-on Attachment", attachment_options)
-                        addon_qty = st.number_input("Add-on Quantity", min_value=1, step=1)
-                        
-                    sell_btn = st.form_submit_button("Execute Dispatch")
-                    
-                    if sell_btn:
-                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                        new_qty = current_qty - sell_qty
-                        new_status = "Sold" if new_qty == 0 else current_item.get('Status', 'Available')
-                        
-                        addon_success = True
-                        addon_log = ""
-                        
-                        # Process Add-on Attachment First
-                        if addon_id != "None":
-                            addon_item = available_items[available_items['ID'] == addon_id].iloc[0]
-                            addon_current_qty = int(addon_item['Qty_On_Hand'])
-                            
-                            if addon_qty > addon_current_qty:
-                                st.error(f"🚫 Cannot bundle {addon_qty}x of {addon_id}. Only {addon_current_qty} in stock!")
-                                addon_success = False
-                            else:
-                                addon_new_qty = addon_current_qty - addon_qty
-                                addon_new_status = "Sold" if addon_new_qty == 0 else addon_item.get('Status', 'Available')
-                                try:
-                                    supabase.table("bull_inventory").update({"Qty_On_Hand": addon_new_qty, "Status": addon_new_status}).eq("ID", addon_id).execute()
-                                    addon_log = f" | Bundled {addon_qty}x {addon_id}"
-                                    
-                                    # Log the attachment sale
-                                    log_entry_addon = {
-                                        "Transaction #": f"TRX-{datetime.now().strftime('%f')}-A", 
-                                        "Timestamp": now, 
-                                        "ID": addon_id, 
-                                        "Model": addon_item.get('Model', 'Unknown'), 
-                                        "Change": f"DISPATCHED {addon_qty} units (Bundled). Remaining: {addon_new_qty}", 
-                                        "User": salesperson
-                                    }
-                                    supabase.table("bull_activity_log").insert(log_entry_addon).execute()
-                                except Exception as e:
-                                    st.error(f"Database Error on Add-on: {e}")
-                                    addon_success = False
-
-                        # Process Primary Item if addon didn't fail
-                        if addon_success:
-                            try:
-                                supabase.table("bull_inventory").update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
-                                
-                                notes_str = f" | Buyer: {buyer_notes}" if buyer_notes else ""
-                                trans_str = f" | Trans: {transport_co}" if transport_co else ""
-                                full_change_log = f"DISPATCHED {sell_qty} units. Remaining: {new_qty}{addon_log}{notes_str}{trans_str}"
-                                
-                                log_entry = {
-                                    "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
-                                    "Timestamp": now, 
-                                    "ID": selected_id, 
-                                    "Model": current_item.get('Model', 'Unknown'), 
-                                    "Change": full_change_log, 
-                                    "User": salesperson
-                                }
-                                supabase.table("bull_activity_log").insert(log_entry).execute()
-                                st.success(f"✅ Dispatch executed for {sell_qty}x {current_item.get('Model', 'Unknown')}!")
-                            except Exception as e:
-                                st.error(f"Database Error: {e}")
-        else:
-            st.warning("No items currently available to dispatch.")
-
-# --- PAGE: UPDATE INVENTORY ---
-elif page == "Update Inventory":
-    st.title("🔄 Logistics: Update Status")
-    df = load_inventory()
-    if not df.empty and 'ID' in df.columns:
-        selected_id = st.selectbox("Select Item ID", df['ID'].dropna().tolist())
-        if selected_id:
-            current_item = df[df['ID'] == selected_id].iloc[0]
-            with st.form("update_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    new_qty = st.number_input("New Quantity", value=int(current_item.get('Qty_On_Hand', 0)), min_value=0)
-                    new_loc = st.text_input("New Location", value=str(current_item.get('Location', 'Warehouse')))
-                with col2:
-                    status_options = ["Available", "Sold", "On Rent", "Maintenance", "Damaged"]
-                    current_status = str(current_item.get('Status', 'Available'))
-                    if current_status not in status_options: status_options.append(current_status)
-                    new_status = st.selectbox("Update Status", status_options, index=status_options.index(current_status))
-                
-                if st.form_submit_button("Update Database"):
-                    try:
-                        supabase.table("bull_inventory").update({"Qty_On_Hand": int(new_qty), "Location": new_loc, "Status": new_status}).eq("ID", selected_id).execute()
-                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
-                        log_entry = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": selected_id, "Model": current_item.get('Model', 'Unknown'), "Change": f"Updated Status: {new_status}. Qty: {new_qty}", "User": "Admin"}
-                        supabase.table("bull_activity_log").insert(log_entry).execute()
-                        st.success(f"✅ Record updated successfully!")
-                    except Exception as e:
-                        st.error(f"Database Error: {e}")
-
-# --- PAGE: ACTIVITY LOG ---
-elif page == "Activity Log":
-    st.title("📖 Official Duty Log")
-    log_df = load_activity()
-    if not log_df.empty:
-        st.dataframe(log_df, use_container_width=True, hide_index=True)
-    else:
-        st.info("No activity recorded yet.")
