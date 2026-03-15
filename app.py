@@ -275,10 +275,10 @@ with st.form("inbound_form", clear_on_submit=True):
             st.rerun()
         except Exception as e:
             st.error(f"Database Error: {e}")
-#--- PAGES: THE DIGITAL LEDGERS ---
-elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
-st.title(f"📂 {page}")
-df = load_inventory()
+ #--- PAGES: THE DIGITAL LEDGERS ---
+ if page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
+     st.title(f"📂 {page}")
+     df = load_inventory()
 
 if not df.empty:
     if page == "Equipment Ledger": df = df[df['Category'] == 'Machine']
