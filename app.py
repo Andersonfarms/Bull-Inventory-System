@@ -9,12 +9,29 @@ from datetime import datetime
 import pytz
 from supabase import create_client, Client
 
-# --- 1. CONFIG & CONNECTION ---
-st.set_page_config(page_title="Bull Inventory System", page_icon="🏗️", layout="wide")
+# --- 0. WHITE-LABEL CONFIGURATION ---
+APP_CONFIG = {
+    "company_name": "Bull", 
+    "app_title": "Inventory System",
+    "logo_path": "bull.png", 
+    "timezone": "US/Central",
+    
+    # Database Tables
+    "table_inventory": "bull_inventory",        
+    "table_activity": "bull_activity_log",      
+    "table_inbound": "bull_inbound_tracking",   
+    
+    # Dropdowns
+    "sales_team": ["Fredrik L.", "Bailey A.", "Admin", "Other"],
+    "machine_models": ["12X", "18X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Other"],
+    "machine_types": ["Excavator", "Skid Steer", "Other"],
+    "categories": ["Machine", "Attachment", "Parts", "Other"],
+    "carriers": ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"]
+}
 
-# ==========================================================
-# TACTICAL UI THEME INJECTION
-# ==========================================================
+# --- 1. CONFIG & CONNECTION ---
+st.set_page_config(page_title=f"{APP_CONFIG['company_name']} {APP_CONFIG['app_title']}", page_icon="🏗️", layout="wide")
+
 tactical_css = """
 <style>
 :root {
@@ -65,7 +82,6 @@ div[data-testid="stFormSubmitButton"] > button:active {
     padding-bottom: 3px;
 }
 
-/* Custom Link Button for Tracking */
 .tracking-btn {
     display: inline-block;
     background-color: transparent;
@@ -85,8 +101,14 @@ div[data-testid="stFormSubmitButton"] > button:active {
 }
 </style>
 """
-
 st.markdown(tactical_css, unsafe_allow_html=True)
+
+header_text = f"""# ==========================================
+# {APP_CONFIG['company_name'].upper()} BULL USA TERMINAL // DATA-LINK v2.6
+# System Engineered by: NyssaFire Gaming
+# Core Uplink Established: {datetime.now(pytz.timezone(APP_CONFIG['timezone'])).strftime('%Y-%m-%d // %H:%M %Z')}
+# =========================================="""
+st.code(header_text, language="text")
 
 @st.cache_resource
 def init_connection():
@@ -95,19 +117,19 @@ def init_connection():
     return create_client(url, key)
 
 supabase = init_connection()
-CENTRAL = pytz.timezone("US/Central")
+CLIENT_TZ = pytz.timezone(APP_CONFIG['timezone'])
 
 # --- 2. DATA LOADERS ---
 def load_inventory():
-    response = supabase.table("bull_inventory").select("*").execute()
+    response = supabase.table(APP_CONFIG["table_inventory"]).select("*").execute()
     return pd.DataFrame(response.data)
 
 def load_activity():
-    response = supabase.table("bull_activity_log").select("*").order("Timestamp", desc=True).execute()
+    response = supabase.table(APP_CONFIG["table_activity"]).select("*").order("Timestamp", desc=True).execute()
     return pd.DataFrame(response.data)
 
 def load_inbound():
-    response = supabase.table("bull_inbound_tracking").select("*").execute()
+    response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
     return pd.DataFrame(response.data)
 
 # --- 3. THE TACTICAL SIDEBAR ROUTER ---
@@ -118,13 +140,13 @@ def nav_to(page_name):
     st.session_state.current_page = page_name
 
 try:
-    st.sidebar.image("bull.png", width=200)
+    st.sidebar.image(APP_CONFIG["logo_path"], width=200)
 except:
-    pass # Failsafe if image doesn't load
+    st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
 
 st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
-st.sidebar.button("Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
-st.sidebar.button("Official Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
+st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
+st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
 st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
@@ -145,7 +167,7 @@ page = st.session_state.current_page
 
 # --- PAGE: DASHBOARD (SITREP) ---
 if page == "Dashboard":
-    st.title("📡 Master View")
+    st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
     df = load_inventory()
     
     if not df.empty:
@@ -176,26 +198,21 @@ if page == "Dashboard":
                 cat_counts = df.groupby('Category')[target_qty_col].sum().reset_index()
                 st.dataframe(cat_counts, hide_index=True, use_container_width=True)
     else:
-        st.warning("No inventory found in Supabase.")
+        st.warning("No inventory found in database.")
 
 # --- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
 elif page == "Inbound Freight":
-    st.title("🚢Inbound Freight")
+    st.title("🚢 Inbound Freight")
     
     def get_tracking_url(carrier, tracking_number):
-        if carrier == "Maersk":
-            return f"https://www.maersk.com/tracking/{tracking_number}"
-        elif carrier == "CMA-CGM":
-            return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={tracking_number}"
-        elif carrier == "MSC":
-            return f"https://www.msc.com/en/track-a-shipment?trackingNumber={tracking_number}"
-        elif carrier == "Hapag-Lloyd":
-            return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html?blno={tracking_number}"
-        else:
-            # Universal fallback for "Other" or unknown
-            return f"https://www.searates.com/container/tracking/?number={tracking_number}"
+        urls = {
+            "Maersk": f"https://www.maersk.com/tracking/{tracking_number}",
+            "CMA-CGM": f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={tracking_number}",
+            "MSC": f"https://www.msc.com/en/track-a-shipment?trackingNumber={tracking_number}",
+            "Hapag-Lloyd": f"https://www.hapag-lloyd.com/en/online-business/track/track-by-container-solution.html?blno={tracking_number}"
+        }
+        return urls.get(carrier, f"https://www.searates.com/container/tracking/?number={tracking_number}")
 
-    # 1. Display Current Inbound Shipments
     inbound_df = load_inbound()
     if not inbound_df.empty:
         active_shipments = inbound_df[inbound_df['Status'] != 'Arrived']
@@ -220,14 +237,13 @@ elif page == "Inbound Freight":
         else:
             st.info("No active containers currently in transit.")
             
-        # Optional: Mark as Arrived
         st.markdown("---")
         st.markdown("**Update Shipment Status**")
         update_id = st.selectbox("Select Container to mark as 'Arrived'", inbound_df[inbound_df['Status'] != 'Arrived']['Tracking_Number'].tolist() if not active_shipments.empty else ["None"])
         if update_id != "None":
             if st.button("Mark as Arrived"):
                 try:
-                    supabase.table("bull_inbound_tracking").update({"Status": "Arrived"}).eq("Tracking_Number", update_id).execute()
+                    supabase.table(APP_CONFIG["table_inbound"]).update({"Status": "Arrived"}).eq("Tracking_Number", update_id).execute()
                     st.success(f"✅ Container {update_id} marked as Arrived. Please move contents to Add New Stock.")
                     st.rerun()
                 except Exception as e:
@@ -236,44 +252,59 @@ elif page == "Inbound Freight":
         st.info("No tracking data on file.")
 
     st.markdown("---")
-    # 2. Add New Inbound Shipment
     st.markdown("### ➕ Log New Inbound Container")
     with st.form("inbound_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
-            tracking_num = st.text_input("Container / Tracking Number (e.g., MSKU1234567)")
-            carrier = st.selectbox("Carrier", ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"])
+            tracking_num = st.text_input("Container / Tracking Number")
+            carrier = st.selectbox("Carrier", APP_CONFIG["carriers"])
         with col2:
-            contents = st.text_input("Primary Contents (e.g., 5x 18X Excavators, Parts)")
+            contents = st.text_input("Primary Contents")
             eta = st.text_input("Expected Time of Arrival (ETA)")
             
-        submit_tracker = st.form_submit_button("Start Tracking")
-        
-        if submit_tracker and tracking_num:
-            new_shipment = {
-                "Tracking_Number": tracking_num,
-                "Carrier": carrier,
-                "Contents": contents,
-                "ETA": eta,
-                "Status": "In Transit"
-            }
+        if st.form_submit_button("Start Tracking") and tracking_num:
+            new_shipment = {"Tracking_Number": tracking_num, "Carrier": carrier, "Contents": contents, "ETA": eta, "Status": "In Transit"}
             try:
-                supabase.table("bull_inbound_tracking").insert(new_shipment).execute()
-                st.success(f"✅ Container {tracking_num} logged into tracking network!")
+                supabase.table(APP_CONFIG["table_inbound"]).insert(new_shipment).execute()
+                st.success(f"✅ Container {tracking_num} logged!")
                 st.rerun()
             except Exception as e:
                 st.error(f"Database Error: {e}")
 
+# --- PAGES: THE DIGITAL LEDGERS ---
+elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
+    st.title(f"📂 {page}")
+    df = load_inventory()
+    
+    if not df.empty:
+        if page == "Equipment Ledger": df = df[df['Category'] == 'Machine']
+        elif page == "Attachment Ledger": df = df[df['Category'] == 'Attachment']
+        elif page == "Parts Ledger": df = df[df['Category'] == 'Parts']
+        elif page == "Damaged Ledger": df = df[df['Status'] == 'Damaged']
+            
+        search = st.text_input(f"🔍 Search {page}:")
+        if search:
+            mask = pd.Series(False, index=df.index)
+            for col in ['Model', 'ID', 'Description']:
+                if col in df.columns:
+                    mask |= df[col].astype(str).str.contains(search, case=False, na=False)
+            df = df[mask]
+            
+        st.dataframe(df, use_container_width=True, hide_index=True)
+    else:
+        st.warning(f"No records found for {page}.")
+
 # --- PAGE: TROUBLESHOOTING GUIDE ---
 elif page == "Troubleshooting":
     st.title("🛠️ Tactical Field Diagnostics")
-    st.markdown("Interactive repair sequences for Bull 18X/20X units.")
+    st.markdown("Interactive repair sequences for mechanical and electrical units.")
 
     issue_cat = st.selectbox("Identify the System Failure:", 
                              ["Select system...", 
                               "No Lights on LCD / Won't Start", 
                               "Battery Not Charging (Electrical System)",
-                              "Engine Won't Start (Starter/Battery Issues)"])
+                              "Engine Won't Start (Starter/Battery Issues)",
+                              "Track Issues (Slipping / No Movement)"])
 
     # --- ISSUE 1: LCD / IGNITION ---
     if issue_cat == "No Lights on LCD / Won't Start":
@@ -302,7 +333,7 @@ elif page == "Troubleshooting":
 
         if test_type == "Stator AC Test (Engine Plug)":
             st.subheader("Alternator AC Output")
-            st.write("Unplug the 2-wire connector from engine. Set meter to **AC Volts**.")
+            st.write("Unplug the 2-wire connector from engine. Set meter to **AC Volts**. Run engine at mid-throttle.")
             ac_val = st.number_input("Enter AC Voltage:", min_value=0.0, step=0.1)
             if ac_val >= 20:
                 st.success(f"✅ Alternator is GOOD ({ac_val}V AC). If battery isn't charging, replace Regulator.")
@@ -338,68 +369,40 @@ elif page == "Troubleshooting":
             else:
                 st.error("❌ Battery is weak/dead.")
 
+    # --- ISSUE 4: TRACKS (MECHANICAL) ---
+    elif issue_cat == "Track Issues (Slipping / No Movement)":
+        st.header("🚜 Mechanical Track Adjustment")
+        st.info("Required Tools: 32mm Wrench (Locknut) & 11/16\" Wrench (Adjuster Bolt)")
+        
+        st.subheader("STEP 1: Prep & Lift")
+        st.write("1. Use the blade/boom to lift the track off the ground.")
+        st.write("2. Clean the adjuster bolt threads with a wire brush to prevent seizing.")
+        
+        st.subheader("STEP 2: The Adjustment")
+        st.warning("DO NOT force the 11/16\" bolt without loosening the 32mm locknut first!")
+        
+        action = st.radio("What is the goal?", ["Tighten Loose Track", "Loosen Over-tight Track"])
+        
+        if action == "Tighten Loose Track":
+            st.markdown("### 🛠️ Execution")
+            st.write("1. Loosen the **32mm Locknut**.")
+            st.write("2. Turn the **11/16\" Bolt** CLOCKWISE to push the idler out.")
+            st.write("3. Stop when sag is **0.5 to 1.0 inches**.")
+            st.write("4. Tighten the 32mm Locknut to secure the setting.")
+            if st.button("Tension Set & Locked"):
+                st.success("✅ Track tensioned. Mechanical lock engaged.")
+
+        elif action == "Loosen Over-tight Track":
+            st.markdown("### 🛠️ Execution")
+            st.write("1. Loosen the **32mm Locknut**.")
+            st.write("2. Turn the **11/16\" Bolt** COUNTER-CLOCKWISE.")
+            st.write("3. Tap the idler with a hammer if it doesn't slide back on its own.")
+            st.write("4. Re-tighten the 32mm Locknut.")
+
     st.markdown("---")
     if st.button("Return to Sitrep"):
         st.session_state.current_page = "Dashboard"
         st.rerun()
-
-    #--- ISSUE 4: TRACKS ---
-    if issue_cat == "Track Issues (Slipping / No Movement)":
-        st.header("🚜 Undercarriage & Drive Diagnostic")
-        
-        st.subheader("STEP 1: The Sag Test (Tension Check)")
-        st.write("Lift the machine using the blade and boom so the track is off the ground. Measure the sag between the middle roller and the track.")
-        
-        sag = st.number_input("Enter Track Sag (inches):", min_value=0.0, step=0.1)
-        
-        if sag > 1.5:
-            st.error(f"❌ Track is too loose ({sag}\"). This causes 'throwing' or slipping.")
-            st.info("💡 **FIX:** Locate the grease nipple behind the side access hole on the track frame. Pump heavy-duty grease into the tensioner until the sag is between 0.5\" and 1.0\".")
-        elif 0.1 <= sag <= 1.5:
-            st.success("✅ Tension looks within range.")
-            
-            st.subheader("STEP 2: Power & Drive Motor Test")
-            st.write("Does the engine 'bog down' when you pull the track levers, or do the levers feel limp?")
-            
-            drive_feel = st.radio("Lever Response:", ["Engine bogs / Tracks won't move", "Levers feel limp / No engine load"])
-            
-            if drive_feel == "Engine bogs / Tracks won't move":
-                st.error("❌ Mechanical Jam or Brake Issue. Check for rocks in the idler/sprocket or a seized drive motor brake.")
-            else:
-                st.error("❌ Hydraulic Loss. Check the 'Deadman' safety lever switch or the Pilot Pressure lines. The drive motors aren't receiving the 'wake up' signal.")
-
-        st.subheader("STEP 3: Final Inspection")
-        st.write("Check the final drive oil levels. If you see thick black gunk or metal shavings leaking from the center of the track motor, the internal seals have failed.")
-# --- PAGES: THE DIGITAL LEDGERS ---
-elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
-    st.title(f"📂 {page}")
-    df = load_inventory()
-    
-    if not df.empty:
-        # Filter logic based on the selected ledger
-        if page == "Equipment Ledger":
-            df = df[df['Category'] == 'Machine']
-        elif page == "Attachment Ledger":
-            df = df[df['Category'] == 'Attachment']
-        elif page == "Parts Ledger":
-            df = df[df['Category'] == 'Parts']
-        elif page == "Damaged Ledger":
-            df = df[df['Status'] == 'Damaged']
-            
-        search = st.text_input(f"🔍 Search {page}:")
-        if search:
-            mask = pd.Series(False, index=df.index)
-            if 'Model' in df.columns:
-                mask |= df['Model'].astype(str).str.contains(search, case=False, na=False)
-            if 'ID' in df.columns:
-                mask |= df['ID'].astype(str).str.contains(search, case=False, na=False)
-            if 'Description' in df.columns:
-                mask |= df['Description'].astype(str).str.contains(search, case=False, na=False)
-            df = df[mask]
-            
-        st.dataframe(df, use_container_width=True, hide_index=True)
-    else:
-        st.warning(f"No records found for {page}.")
 
 # --- PAGE: ADD NEW STOCK ---
 elif page == "Add New Stock":
@@ -408,49 +411,26 @@ elif page == "Add New Stock":
         col1, col2 = st.columns(2)
         with col1:
             new_id = st.text_input("Item ID (e.g., A-9PWW)")
-            model_options = ["12X", "18X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Other"]
-            new_model = st.selectbox("Model Name", model_options)
-            new_type = st.selectbox("Machine Type", ["Excavator", "Skid Steer", "Other"])
+            new_model = st.selectbox("Model Name", APP_CONFIG["machine_models"])
+            new_type = st.selectbox("Machine Type", APP_CONFIG["machine_types"])
             new_qty = st.number_input("Quantity", min_value=1, step=1)
             
         with col2:
-            new_cat = st.selectbox("Category", ["Machine", "Attachment", "Parts", "Other"])
-            size_options = ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"]
-            new_size = st.selectbox("Size", size_options)
-            
-            # --- NEW DESCRIPTION FIELD FOR PARTS ---
-            desc_options = [
-                "N/A", "Air Filter", "Oil Filter", "Hydraulic Filter", "Fuel Filter", 
-                "Hydraulic Hose", "O-Rings / Seals", "Track Assembly", "Sprocket / Idler", 
-                "Teeth / Cutting Edge", "Pins & Bushings", "Electrical Relay / Fuse", 
-                "Sensors", "Hardware / Fasteners", "Fluids / Grease", "Other"
-            ]
-            new_desc = st.selectbox("Part Description", desc_options)
-            
+            new_cat = st.selectbox("Category", APP_CONFIG["categories"])
+            new_size = st.selectbox("Size", ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"])
+            new_desc = st.selectbox("Part Description", ["N/A", "Air Filter", "Oil Filter", "Hydraulic Filter", "Fuel Filter", "Hydraulic Hose", "O-Rings / Seals", "Track Assembly", "Sprocket / Idler", "Teeth / Cutting Edge", "Pins & Bushings", "Electrical Relay / Fuse", "Sensors", "Hardware / Fasteners", "Fluids / Grease", "Other"])
             new_loc = st.text_input("Location", value="Warehouse")
             
-        submit = st.form_submit_button("Commit to Database")
-        
-        if submit and new_id:
-            now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+        if st.form_submit_button("Commit to Database") and new_id:
+            now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
             trx_id = f"TRX-{datetime.now().strftime('%f')}" 
             
-            # Pack the description into the database payload
-            new_item = {
-                "ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), 
-                "Location": new_loc, "Category": new_cat, "Size": new_size, "Description": new_desc, 
-                "Status": "Available"
-            }
+            new_item = {"ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), "Location": new_loc, "Category": new_cat, "Size": new_size, "Description": new_desc, "Status": "Available"}
             try:
-                supabase.table("bull_inventory").insert(new_item).execute()
-                
-                # Format the log entry to show the description if it's not N/A
+                supabase.table(APP_CONFIG["table_inventory"]).insert(new_item).execute()
                 desc_log = f" - {new_desc}" if new_desc != "N/A" else ""
-                log_entry = {
-                    "Transaction #": trx_id, "Timestamp": now, "ID": new_id, "Model": new_model, 
-                    "Change": f"Added {new_qty} units ({new_size}{desc_log})", "User": "Admin"
-                }
-                supabase.table("bull_activity_log").insert(log_entry).execute()
+                log_entry = {"Transaction #": trx_id, "Timestamp": now, "ID": new_id, "Model": new_model, "Change": f"Added {new_qty} units ({new_size}{desc_log})", "User": "Admin"}
+                supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
                 st.success(f"✅ {new_model} successfully stored!")
             except Exception as e:
                 st.error(f"Database Error: {e}")
@@ -471,36 +451,30 @@ elif page == "Sell Inventory":
                 current_qty = int(current_item['Qty_On_Hand'])
                 st.info(f"Target: **{current_item.get('Model', 'Unknown')}** | Current Stock: **{current_qty}**")
                 
-                # Pre-gather attachment options for bundling
-                attachments_df = available_items[available_items['Category'] == 'Attachment']
-                # Exclude the primary item from the attachment list if it happens to be an attachment itself
-                attachments_df = attachments_df[attachments_df['ID'] != selected_id]
+                attachments_df = available_items[(available_items['Category'] == 'Attachment') & (available_items['ID'] != selected_id)]
                 attachment_options = ["None"] + attachments_df['ID'].dropna().tolist()
                 
                 with st.form("sell_form"):
                     col1, col2 = st.columns(2)
                     with col1:
                         sell_qty = st.number_input("Quantity Dispatched", min_value=1, max_value=current_qty, step=1)
-                        salesperson = st.selectbox("Salesperson", ["Fredrik L.", "Bailey A.", "Admin", "Other"])
+                        salesperson = st.selectbox("Salesperson", APP_CONFIG["sales_team"])
                         buyer_notes = st.text_input("Dispatch Notes / Buyer Name")
                         
                     with col2:
-                        transport_co = st.text_input("Transport Company", help="Browser autofill will remember previous entries.")
+                        transport_co = st.text_input("Transport Company")
                         st.markdown("**Bundle an Attachment?**")
                         addon_id = st.selectbox("Select Add-on Attachment", attachment_options)
                         addon_qty = st.number_input("Add-on Quantity", min_value=1, step=1)
                         
-                    sell_btn = st.form_submit_button("Execute Dispatch")
-                    
-                    if sell_btn:
-                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                    if st.form_submit_button("Execute Dispatch"):
+                        now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
                         new_qty = current_qty - sell_qty
                         new_status = "Sold" if new_qty == 0 else current_item.get('Status', 'Available')
                         
                         addon_success = True
                         addon_log = ""
                         
-                        # Process Add-on Attachment First
                         if addon_id != "None":
                             addon_item = available_items[available_items['ID'] == addon_id].iloc[0]
                             addon_current_qty = int(addon_item['Qty_On_Hand'])
@@ -512,41 +486,23 @@ elif page == "Sell Inventory":
                                 addon_new_qty = addon_current_qty - addon_qty
                                 addon_new_status = "Sold" if addon_new_qty == 0 else addon_item.get('Status', 'Available')
                                 try:
-                                    supabase.table("bull_inventory").update({"Qty_On_Hand": addon_new_qty, "Status": addon_new_status}).eq("ID", addon_id).execute()
+                                    supabase.table(APP_CONFIG["table_inventory"]).update({"Qty_On_Hand": addon_new_qty, "Status": addon_new_status}).eq("ID", addon_id).execute()
                                     addon_log = f" | Bundled {addon_qty}x {addon_id}"
-                                    
-                                    # Log the attachment sale
-                                    log_entry_addon = {
-                                        "Transaction #": f"TRX-{datetime.now().strftime('%f')}-A", 
-                                        "Timestamp": now, 
-                                        "ID": addon_id, 
-                                        "Model": addon_item.get('Model', 'Unknown'), 
-                                        "Change": f"DISPATCHED {addon_qty} units (Bundled). Remaining: {addon_new_qty}", 
-                                        "User": salesperson
-                                    }
-                                    supabase.table("bull_activity_log").insert(log_entry_addon).execute()
+                                    log_entry_addon = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}-A", "Timestamp": now, "ID": addon_id, "Model": addon_item.get('Model', 'Unknown'), "Change": f"DISPATCHED {addon_qty} units (Bundled). Remaining: {addon_new_qty}", "User": salesperson}
+                                    supabase.table(APP_CONFIG["table_activity"]).insert(log_entry_addon).execute()
                                 except Exception as e:
                                     st.error(f"Database Error on Add-on: {e}")
                                     addon_success = False
 
-                        # Process Primary Item if addon didn't fail
                         if addon_success:
                             try:
-                                supabase.table("bull_inventory").update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
-                                
+                                supabase.table(APP_CONFIG["table_inventory"]).update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
                                 notes_str = f" | Buyer: {buyer_notes}" if buyer_notes else ""
                                 trans_str = f" | Trans: {transport_co}" if transport_co else ""
                                 full_change_log = f"DISPATCHED {sell_qty} units. Remaining: {new_qty}{addon_log}{notes_str}{trans_str}"
                                 
-                                log_entry = {
-                                    "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
-                                    "Timestamp": now, 
-                                    "ID": selected_id, 
-                                    "Model": current_item.get('Model', 'Unknown'), 
-                                    "Change": full_change_log, 
-                                    "User": salesperson
-                                }
-                                supabase.table("bull_activity_log").insert(log_entry).execute()
+                                log_entry = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": selected_id, "Model": current_item.get('Model', 'Unknown'), "Change": full_change_log, "User": salesperson}
+                                supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
                                 st.success(f"✅ Dispatch executed for {sell_qty}x {current_item.get('Model', 'Unknown')}!")
                             except Exception as e:
                                 st.error(f"Database Error: {e}")
@@ -574,10 +530,10 @@ elif page == "Update Inventory":
                 
                 if st.form_submit_button("Update Database"):
                     try:
-                        supabase.table("bull_inventory").update({"Qty_On_Hand": int(new_qty), "Location": new_loc, "Status": new_status}).eq("ID", selected_id).execute()
-                        now = datetime.now(CENTRAL).strftime("%Y-%m-%d %H:%M:%S")
+                        supabase.table(APP_CONFIG["table_inventory"]).update({"Qty_On_Hand": int(new_qty), "Location": new_loc, "Status": new_status}).eq("ID", selected_id).execute()
+                        now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
                         log_entry = {"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": selected_id, "Model": current_item.get('Model', 'Unknown'), "Change": f"Updated Status: {new_status}. Qty: {new_qty}", "User": "Admin"}
-                        supabase.table("bull_activity_log").insert(log_entry).execute()
+                        supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
                         st.success(f"✅ Record updated successfully!")
                     except Exception as e:
                         st.error(f"Database Error: {e}")
