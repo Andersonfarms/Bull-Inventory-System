@@ -276,32 +276,6 @@ elif page == "Troubleshooting":
                               "Engine Won't Start (Starter/Battery Issues)"])
 
     # --- ISSUE 1: LCD / IGNITION ---
-   if issue_cat == "Track Issues (Slipping / No Movement)":
-        st.header("🚜 Undercarriage & Drive Diagnostic")
-        
-        st.subheader("STEP 1: The Sag Test (Tension Check)")
-        st.write("Lift the machine using the blade and boom so the track is off the ground. Measure the sag between the middle roller and the track.")
-        
-        sag = st.number_input("Enter Track Sag (inches):", min_value=0.0, step=0.1)
-        
-        if sag > 1.5:
-            st.error(f"❌ Track is too loose ({sag}\"). This causes 'throwing' or slipping.")
-            st.info("💡 **FIX:** Locate the grease nipple behind the side access hole on the track frame. Pump heavy-duty grease into the tensioner until the sag is between 0.5\" and 1.0\".")
-        elif 0.1 <= sag <= 1.5:
-            st.success("✅ Tension looks within range.")
-            
-            st.subheader("STEP 2: Power & Drive Motor Test")
-            st.write("Does the engine 'bog down' when you pull the track levers, or do the levers feel limp?")
-            
-            drive_feel = st.radio("Lever Response:", ["Engine bogs / Tracks won't move", "Levers feel limp / No engine load"])
-            
-            if drive_feel == "Engine bogs / Tracks won't move":
-                st.error("❌ Mechanical Jam or Brake Issue. Check for rocks in the idler/sprocket or a seized drive motor brake.")
-            else:
-                st.error("❌ Hydraulic Loss. Check the 'Deadman' safety lever switch or the Pilot Pressure lines. The drive motors aren't receiving the 'wake up' signal.")
-
-        st.subheader("STEP 3: Final Inspection")
-        st.write("Check the final drive oil levels. If you see thick black gunk or metal shavings leaking from the center of the track motor, the internal seals have failed.")
     if issue_cat == "No Lights on LCD / Won't Start":
         st.header("🖥️ LCD & Ignition Diagnostic")
         
@@ -368,6 +342,34 @@ elif page == "Troubleshooting":
     if st.button("Return to Sitrep"):
         st.session_state.current_page = "Dashboard"
         st.rerun()
+
+    #---ISSUE 4: TRACKS
+    if issue_cat == "Track Issues (Slipping / No Movement)":
+        st.header("🚜 Undercarriage & Drive Diagnostic")
+        
+        st.subheader("STEP 1: The Sag Test (Tension Check)")
+        st.write("Lift the machine using the blade and boom so the track is off the ground. Measure the sag between the middle roller and the track.")
+        
+        sag = st.number_input("Enter Track Sag (inches):", min_value=0.0, step=0.1)
+        
+        if sag > 1.5:
+            st.error(f"❌ Track is too loose ({sag}\"). This causes 'throwing' or slipping.")
+            st.info("💡 **FIX:** Locate the grease nipple behind the side access hole on the track frame. Pump heavy-duty grease into the tensioner until the sag is between 0.5\" and 1.0\".")
+        elif 0.1 <= sag <= 1.5:
+            st.success("✅ Tension looks within range.")
+            
+            st.subheader("STEP 2: Power & Drive Motor Test")
+            st.write("Does the engine 'bog down' when you pull the track levers, or do the levers feel limp?")
+            
+            drive_feel = st.radio("Lever Response:", ["Engine bogs / Tracks won't move", "Levers feel limp / No engine load"])
+            
+            if drive_feel == "Engine bogs / Tracks won't move":
+                st.error("❌ Mechanical Jam or Brake Issue. Check for rocks in the idler/sprocket or a seized drive motor brake.")
+            else:
+                st.error("❌ Hydraulic Loss. Check the 'Deadman' safety lever switch or the Pilot Pressure lines. The drive motors aren't receiving the 'wake up' signal.")
+
+        st.subheader("STEP 3: Final Inspection")
+        st.write("Check the final drive oil levels. If you see thick black gunk or metal shavings leaking from the center of the track motor, the internal seals have failed.")
 # --- PAGES: THE DIGITAL LEDGERS ---
 elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
     st.title(f"📂 {page}")
