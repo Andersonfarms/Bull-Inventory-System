@@ -144,7 +144,7 @@ page = st.session_state.current_page
 
 # --- PAGE: DASHBOARD (SITREP) ---
 if page == "Dashboard":
-    st.title("📡 Sitrep: Master Overview")
+    st.title("📡 Master View")
     df = load_inventory()
     
     if not df.empty:
