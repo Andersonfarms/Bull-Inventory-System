@@ -269,73 +269,79 @@ elif page == "Troubleshooting":
     st.title("🛠️ Tactical Field Diagnostics")
     st.markdown("Interactive repair sequences for Bull 18X/20X units.")
 
-    # Top level issue selection
     issue_cat = st.selectbox("Identify the System Failure:", 
                              ["Select system...", 
                               "No Lights on LCD / Won't Start", 
-                              "Engine Won't Start (Starter Issues)", 
-                              "Battery Not Charging (Electrical System)"])
+                              "Battery Not Charging (Electrical System)",
+                              "Engine Won't Start (Starter/Battery Issues)"])
 
+    # --- ISSUE 1: LCD / IGNITION ---
     if issue_cat == "No Lights on LCD / Won't Start":
         st.header("🖥️ LCD & Ignition Diagnostic")
         
-        st.subheader("STEP 1: Physical Checks")
-        st.info("Verify E-Stop is UP and all fuses (Engine compartment & Main 30A/60A near battery) are intact.")
+        st.subheader("STEP 1: Initial Safety Checks")
+        st.info("1. Verify E-Stop is physically UP.\n2. Check fuses inside engine door.\n3. Check 30A/60A Main Fuses near battery.")
         
         if st.checkbox("Fuses and E-Stop button are physically OK"):
             st.subheader("STEP 2: The E-Stop Bypass Test")
-            st.write("Unplug the Emergency Stop Button harness and use a jumper wire to bridge the connection.")
+            st.write("Unplug the E-Stop harness. Use a jumper wire to bridge the connection.")
             
-            if st.button("MACHINE FIRES UP"):
+            col1, col2 = st.columns(2)
+            if col1.button("MACHINE FIRES UP"):
                 st.success("✅ **FIXED: Bad E-Stop Switch.**")
                 st.warning("The internal contact in the switch has failed. Replace the E-Stop assembly.")
-            if st.button("STILL NO LIGHTS"):
+            if col2.button("STILL NO LIGHTS"):
                 st.error("### STEP 3: Ignition Switch & Harness")
                 st.write("Check the **Grey wire** on the back of the key switch for 12V when turned to 'ON'. If 0V, the ignition switch is fried.")
 
-    elif issue_cat == "Engine Won't Start (Starter Issues)":
-        st.header("⚡ Starter System Diagnostic")
-        st.subheader("STEP 1: The 'TAP' Test")
-        st.write("Give the starter body a firm tap with a wrench while turning the key.")
-        c1, c2 = st.columns(2)
-        if c1.button("IT FIRED UP"):
-            st.warning("⚠️ Starter brushes are worn/sticking. Recommend replacement.")
-        if c2.button("NO CHANGE"):
-            st.subheader("STEP 2: Voltage Drop Test")
-            test_result = st.radio("Multimeter reading while cranking:", 
-                                   ["Stays at 12.6V (Clicking only)", "Drops below 10V"])
-            if test_result == "Stays at 12.6V (Clicking only)":
-                st.error("❌ Power not reaching starter. Check solenoid and battery terminal connections.")
-            else:
-                st.error("❌ Battery is weak or dead.")
-
+    # --- ISSUE 2: CHARGING SYSTEM ---
     elif issue_cat == "Battery Not Charging (Electrical System)":
         st.header("🔌 Charging System (18X Style)")
         
-        st.subheader("STEP 1: Stator (Alternator) Output")
-        st.write("Unplug the 2-wire engine connector. Set meter to **AC Volts**. Run engine at mid-throttle.")
-        ac_volts = st.number_input("Enter AC Voltage reading:", min_value=0.0)
-        
-        if ac_volts >= 20:
-            st.success(f"✅ Stator is GOOD ({ac_volts}V AC).")
-            st.subheader("STEP 2: Regulator Output Check")
-            st.write("Plug everything back in. Check battery voltage with engine running.")
-            dc_volts = st.number_input("Enter Battery DC Voltage:", min_value=0.0)
-            
-            if 13.8 <= dc_volts <= 14.6:
-                st.success(f"✅ System Healthy ({dc_volts}V). No repair needed.")
-            elif dc_volts < 13.5:
-                st.error(f"❌ Low Output ({dc_volts}V). Replace the Voltage Regulator (finned box).")
-        elif 0 < ac_volts < 20:
-            st.error("❌ Low AC Output: Check fan belt tension. It may be slipping when hot.")
-        elif ac_volts == 0:
-            st.error("❌ Alternator is DEAD.")
+        test_type = st.radio("Which test are you performing?", ["Stator AC Test (Engine Plug)", "Battery DC Test (Battery Terminals)"])
+
+        if test_type == "Stator AC Test (Engine Plug)":
+            st.subheader("Alternator AC Output")
+            st.write("Unplug the 2-wire connector from engine. Set meter to **AC Volts**.")
+            ac_val = st.number_input("Enter AC Voltage:", min_value=0.0, step=0.1)
+            if ac_val >= 20:
+                st.success(f"✅ Alternator is GOOD ({ac_val}V AC). If battery isn't charging, replace Regulator.")
+            elif 0 < ac_val < 20:
+                st.error("❌ Low AC Output: Check fan belt tension.")
+            elif ac_val == 0:
+                st.error("❌ Alternator is DEAD.")
+
+        else:
+            st.subheader("Battery Charging Voltage")
+            st.write("Measure DC Volts at battery with engine running at mid-throttle.")
+            dc_val = st.number_input("Enter DC Voltage:", min_value=0.0, step=0.1)
+            if 13.6 <= dc_val <= 14.8:
+                st.success(f"✅ System Healthy ({dc_val}V DC). Battery is charging.")
+            elif 12.8 < dc_val < 13.6:
+                st.warning("⚠️ Marginal Charging. Check for loose grounds or old battery.")
+            elif dc_val <= 12.8:
+                st.error("❌ Not Charging. Check Stator AC output (Step 1).")
+
+    # --- ISSUE 3: STARTER ---
+    elif issue_cat == "Engine Won't Start (Starter/Battery Issues)":
+        st.header("⚡ Starter System Diagnostic")
+        st.subheader("The 'TAP' Test")
+        st.write("Tap starter body with a wrench while turning the key.")
+        if st.button("IT FIRED UP"):
+            st.warning("⚠️ Starter brushes are worn. Replace starter.")
+        else:
+            st.subheader("Voltage Drop Test")
+            st.write("Check battery voltage WHILE cranking.")
+            drop = st.radio("Result:", ["Stays at 12.6V (No crank)", "Drops below 10V (Weak crank)"])
+            if "Stays" in drop:
+                st.error("❌ Power not reaching starter. Check solenoid/terminals.")
+            else:
+                st.error("❌ Battery is weak/dead.")
 
     st.markdown("---")
     if st.button("Return to Sitrep"):
         st.session_state.current_page = "Dashboard"
         st.rerun()
-
 # --- PAGES: THE DIGITAL LEDGERS ---
 elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
     st.title(f"📂 {page}")
