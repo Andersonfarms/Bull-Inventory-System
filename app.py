@@ -11,24 +11,23 @@ from supabase import create_client, Client
 # --- 0. WHITE-LABEL CONFIGURATION ---
 # Change these variables for each new client deployment.
 APP_CONFIG = {
-    "company_name": "Bull", 
+    "company_name": "YOUR_CLIENT_NAME", # e.g., "Apex Logistics"
     "app_title": "Inventory System",
-    "logo_path": "bull.png", 
+    "logo_path": "client_logo.png", # Swap with the new client's logo file
     "timezone": "US/Central",
     
-    # Database Tables
-    "table_inventory": "bull_inventory",        
-    "table_activity": "bull_activity_log",      
-    "table_inbound": "bull_inbound_tracking",   
+    # Database Tables (Ensure these match your Supabase setup for the new client)
+    "table_inventory": "client_inventory",        
+    "table_activity": "client_activity_log",      
+    "table_inbound": "client_inbound_tracking",   
     
-    # Client-Specific Dropdowns
-    "sales_team": ["Fredrik L.", "Bailey A.", "Admin", "Other"],
-    "machine_models": ["12X", "18X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Other"],
-    "machine_types": ["Excavator", "Skid Steer", "Other"],
-    "categories": ["Machine", "Attachment", "Parts", "Other"],
-    "carriers": ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"]
+    # Client-Specific Dropdowns (Customize for their specific business)
+    "sales_team": ["Salesperson 1", "Salesperson 2", "Admin", "Other"],
+    "machine_models": ["Model A", "Model B", "Model C", "Other"],
+    "machine_types": ["Type 1", "Type 2", "Other"],
+    "categories": ["Category 1", "Category 2", "Category 3", "Other"],
+    "carriers": ["Carrier A", "Carrier B", "Carrier C", "Other"]
 }
-
 # --- 1. CONFIG & CONNECTION ---
 st.set_page_config(page_title=f"{APP_CONFIG['company_name']} {APP_CONFIG['app_title']}", page_icon="🏗️", layout="wide")
 
