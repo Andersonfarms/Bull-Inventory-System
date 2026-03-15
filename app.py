@@ -119,25 +119,25 @@ st.markdown(f"""
 
 @st.cache_resource
 def init_connection():
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-return create_client(url, key)
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
 
 supabase = init_connection()
 CLIENT_TZ = pytz.timezone(APP_CONFIG['timezone'])
 
 --- 2. DATA LOADERS ---
 def load_inventory():
-response = supabase.table(APP_CONFIG["table_inventory"]).select("*").execute()
-return pd.DataFrame(response.data)
+    response = supabase.table(APP_CONFIG["table_inventory"]).select("*").execute()
+    return pd.DataFrame(response.data)
 
 def load_activity():
-response = supabase.table(APP_CONFIG["table_activity"]).select("*").order("Timestamp", desc=True).execute()
-return pd.DataFrame(response.data)
+    response = supabase.table(APP_CONFIG["table_activity"]).select("*").order("Timestamp", desc=True).execute()
+    return pd.DataFrame(response.data)
 
 def load_inbound():
-response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
-return pd.DataFrame(response.data)
+    response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
+    return pd.DataFrame(response.data)
 
 --- 3. THE TACTICAL SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
