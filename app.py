@@ -206,7 +206,7 @@ if not df.empty:
 else:
     st.warning("No inventory found in database.")
 #--- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
-elif page == "Inbound Freight":
+if page == "Inbound Freight":
 st.title("🚢 Inbound Freight")
 
 def get_tracking_url(carrier, tracking_number):
