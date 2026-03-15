@@ -141,15 +141,15 @@ def load_inbound():
 
 #--- 3. THE TACTICAL SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
-st.session_state.current_page = "Dashboard"
+    st.session_state.current_page = "Dashboard"
 
 def nav_to(page_name):
-st.session_state.current_page = page_name
+    st.session_state.current_page = page_name
 
 try:
-st.sidebar.image(APP_CONFIG["logo_path"], width=200)
+    st.sidebar.image(APP_CONFIG["logo_path"], width=200)
 except:
-st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
+    st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
 
 st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
 st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
