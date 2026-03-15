@@ -173,8 +173,8 @@ page = st.session_state.current_page
 
 #--- PAGE: DASHBOARD (SITREP) ---
 if page == "Dashboard":
-st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
-df = load_inventory()
+    st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
+    df = load_inventory()
 
 if not df.empty:
     col1, col2, col3 = st.columns(3)
