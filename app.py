@@ -136,8 +136,8 @@ def load_activity():
     return pd.DataFrame(response.data)
 
 def load_inbound():
-response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
-return pd.DataFrame(response.data)
+    response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
+    return pd.DataFrame(response.data)
 
 #--- 3. THE TACTICAL SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
