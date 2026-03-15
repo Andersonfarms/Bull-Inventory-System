@@ -126,7 +126,7 @@ def init_connection():
 supabase = init_connection()
 CLIENT_TZ = pytz.timezone(APP_CONFIG['timezone'])
 
---- 2. DATA LOADERS ---
+#--- 2. DATA LOADERS ---
 def load_inventory():
     response = supabase.table(APP_CONFIG["table_inventory"]).select("*").execute()
     return pd.DataFrame(response.data)
@@ -139,7 +139,7 @@ def load_inbound():
 response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
 return pd.DataFrame(response.data)
 
---- 3. THE TACTICAL SIDEBAR ROUTER ---
+#--- 3. THE TACTICAL SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
 st.session_state.current_page = "Dashboard"
 
@@ -171,7 +171,7 @@ st.sidebar.button("Update Status", on_click=nav_to, args=("Update Inventory",), 
 
 page = st.session_state.current_page
 
---- PAGE: DASHBOARD (SITREP) ---
+#--- PAGE: DASHBOARD (SITREP) ---
 if page == "Dashboard":
 st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
 df = load_inventory()
@@ -205,7 +205,7 @@ if not df.empty:
             st.dataframe(cat_counts, hide_index=True, use_container_width=True)
 else:
     st.warning("No inventory found in database.")
---- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
+#--- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
 elif page == "Inbound Freight":
 st.title("🚢 Inbound Freight")
 
@@ -275,7 +275,7 @@ with st.form("inbound_form", clear_on_submit=True):
             st.rerun()
         except Exception as e:
             st.error(f"Database Error: {e}")
---- PAGES: THE DIGITAL LEDGERS ---
+#--- PAGES: THE DIGITAL LEDGERS ---
 elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
 st.title(f"📂 {page}")
 df = load_inventory()
@@ -297,7 +297,7 @@ if not df.empty:
     st.dataframe(df, use_container_width=True, hide_index=True)
 else:
     st.warning(f"No records found for {page}.")
---- PAGE: ADD NEW STOCK ---
+#--- PAGE: ADD NEW STOCK ---
 elif page == "Add New Stock":
 st.title("➕ Logistics: Register New Stock")
 with st.form("add_form", clear_on_submit=True):
@@ -327,7 +327,7 @@ new_qty = st.number_input("Quantity", min_value=1, step=1)
             st.success(f"✅ {new_model} successfully stored!")
         except Exception as e:
             st.error(f"Database Error: {e}")
---- PAGE: SELL INVENTORY ---
+#--- PAGE: SELL INVENTORY ---
 elif page == "Sell Inventory":
 st.title("🛒 Logistics: Dispatch / Sell")
 df = load_inventory()
@@ -400,7 +400,7 @@ if not available_items.empty:
                             st.error(f"Database Error: {e}")
     else:
         st.warning("No items currently available to dispatch.")
---- PAGE: UPDATE INVENTORY ---
+#--- PAGE: UPDATE INVENTORY ---
 elif page == "Update Inventory":
 st.title("🔄 Logistics: Update Status")
 df = load_inventory()
@@ -428,7 +428,7 @@ new_status = st.selectbox("Update Status", status_options, index=status_options.
                     st.success(f"✅ Record updated successfully!")
                 except Exception as e:
                     st.error(f"Database Error: {e}")
---- PAGE: ACTIVITY LOG ---
+#--- PAGE: ACTIVITY LOG ---
 elif page == "Activity Log":
 st.title("📖 Official Duty Log")
 log_df = load_activity()
@@ -436,12 +436,3 @@ if not log_df.empty:
 st.dataframe(log_df, use_container_width=True, hide_index=True)
 else:
 st.info("No activity recorded yet.")
-
-
-### Next Steps for the $4K Pitch
-If you end up pitching this to a new company instead of Bull, you will only need to:
-1.  Change the strings in `APP_CONFIG`.
-2.  Rename the three tables inside your Supabase dashboard to match the new config names.
-3.  Drop their logo into the folder.
-
-Would you like me to show you how to move that `APP_CONFIG` block into a completely separate `config.json` file so that your core Python logic remains totally untouched between different client builds?
