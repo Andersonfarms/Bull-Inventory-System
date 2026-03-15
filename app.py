@@ -343,7 +343,7 @@ elif page == "Troubleshooting":
         st.session_state.current_page = "Dashboard"
         st.rerun()
 
-    #---ISSUE 4: TRACKS
+    #--- ISSUE 4: TRACKS ---
     if issue_cat == "Track Issues (Slipping / No Movement)":
         st.header("🚜 Undercarriage & Drive Diagnostic")
         
