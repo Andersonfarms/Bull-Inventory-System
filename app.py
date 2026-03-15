@@ -104,7 +104,7 @@ div[data-testid="stFormSubmitButton"] > button:active {
 st.markdown(tactical_css, unsafe_allow_html=True)
 
 header_text = f"""# ==========================================
-# {APP_CONFIG['company_name'].upper()} BULL USA TERMINAL // DATA-LINK v2.6
+# {APP_CONFIG['company_name'].upper()} INVENTORY TERMINAL // DATA-LINK v3.0
 # System Engineered by: NyssaFire Gaming
 # Core Uplink Established: {datetime.now(pytz.timezone(APP_CONFIG['timezone'])).strftime('%Y-%m-%d // %H:%M %Z')}
 # =========================================="""
@@ -156,7 +156,7 @@ st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",
 st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
 st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
-st.sidebar.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
+st.sidebar.button("Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
 st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
@@ -296,7 +296,7 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged 
 
 # --- PAGE: TROUBLESHOOTING GUIDE ---
 elif page == "Troubleshooting":
-    st.title("🛠️ Tactical Field Diagnostics")
+    st.title("Field Diagnostics")
     st.markdown("Interactive repair sequences for mechanical and electrical units.")
 
     issue_cat = st.selectbox("Identify the System Failure:", 
@@ -308,7 +308,7 @@ elif page == "Troubleshooting":
 
     # --- ISSUE 1: LCD / IGNITION ---
     if issue_cat == "No Lights on LCD / Won't Start":
-        st.header("🖥️ LCD & Ignition Diagnostic")
+        st.header("LCD & Ignition Diagnostic")
         
         st.subheader("STEP 1: Initial Safety Checks")
         st.info("1. Verify E-Stop is physically UP.\n2. Check fuses inside engine door.\n3. Check 30A/60A Main Fuses near battery.")
@@ -369,35 +369,59 @@ elif page == "Troubleshooting":
             else:
                 st.error("❌ Battery is weak/dead.")
 
-    # --- ISSUE 4: TRACKS (MECHANICAL) ---
+    # --- ISSUE 4: TRACKS (MECHANICAL & HYDRAULIC) ---
     elif issue_cat == "Track Issues (Slipping / No Movement)":
-        st.header("🚜 Mechanical Track Adjustment")
-        st.info("Required Tools: 32mm Wrench (Locknut) & 11/16\" Wrench (Adjuster Bolt)")
+        st.header("🚜 Track & Drive System Diagnostic")
         
-        st.subheader("STEP 1: Prep & Lift")
-        st.write("1. Use the blade/boom to lift the track off the ground.")
-        st.write("2. Clean the adjuster bolt threads with a wire brush to prevent seizing.")
+        track_issue_type = st.radio("Select the type of track failure:", 
+                                    ["Track is physically loose/slipping (Mechanical)", 
+                                     "Tracks won't move / no power to levers (Hydraulic)"])
         
-        st.subheader("STEP 2: The Adjustment")
-        st.warning("DO NOT force the 11/16\" bolt without loosening the 32mm locknut first!")
-        
-        action = st.radio("What is the goal?", ["Tighten Loose Track", "Loosen Over-tight Track"])
-        
-        if action == "Tighten Loose Track":
-            st.markdown("### 🛠️ Execution")
-            st.write("1. Loosen the **32mm Locknut**.")
-            st.write("2. Turn the **11/16\" Bolt** CLOCKWISE to push the idler out.")
-            st.write("3. Stop when sag is **0.5 to 1.0 inches**.")
-            st.write("4. Tighten the 32mm Locknut to secure the setting.")
-            if st.button("Tension Set & Locked"):
-                st.success("✅ Track tensioned. Mechanical lock engaged.")
+        if track_issue_type == "Track is physically loose/slipping (Mechanical)":
+            st.subheader("Mechanical Track Adjustment")
+            st.info("Required Tools: 32mm Wrench (Locknut) & 11/16\" Wrench (Adjuster Bolt)")
+            
+            st.write("1. Use the blade/boom to lift the track off the ground.")
+            st.write("2. Clean the adjuster bolt threads with a wire brush to prevent seizing.")
+            st.warning("DO NOT force the 11/16\" bolt without loosening the 32mm locknut first!")
+            
+            action = st.radio("What is the goal?", ["Tighten Loose Track", "Loosen Over-tight Track"])
+            
+            if action == "Tighten Loose Track":
+                st.markdown("### Execution")
+                st.write("1. Loosen the **32mm Locknut**.")
+                st.write("2. Turn the **11/16\" Bolt** CLOCKWISE to push the idler out.")
+                st.write("3. Stop when sag is **0.5 to 1.0 inches**.")
+                st.write("4. Tighten the 32mm Locknut to secure the setting.")
+                if st.button("Tension Set & Locked"):
+                    st.success("✅ Track tensioned. Mechanical lock engaged.")
 
-        elif action == "Loosen Over-tight Track":
-            st.markdown("### 🛠️ Execution")
-            st.write("1. Loosen the **32mm Locknut**.")
-            st.write("2. Turn the **11/16\" Bolt** COUNTER-CLOCKWISE.")
-            st.write("3. Tap the idler with a hammer if it doesn't slide back on its own.")
-            st.write("4. Re-tighten the 32mm Locknut.")
+            elif action == "Loosen Over-tight Track":
+                st.markdown("### Execution")
+                st.write("1. Loosen the **32mm Locknut**.")
+                st.write("2. Turn the **11/16\" Bolt** COUNTER-CLOCKWISE.")
+                st.write("3. Tap the idler with a hammer if it doesn't slide back on its own.")
+                st.write("4. Re-tighten the 32mm Locknut.")
+
+        elif track_issue_type == "Tracks won't move / no power to levers (Hydraulic)":
+            st.subheader("💧 Hydraulic & Drive Motor Test")
+            st.write("Does the engine 'bog down' when you pull the track levers, or do the levers feel limp?")
+            
+            drive_feel = st.radio("Lever Response:", ["Engine bogs / Tracks won't move", "Levers feel limp / No engine load"])
+            
+            if drive_feel == "Engine bogs / Tracks won't move":
+                st.error("❌ Mechanical Jam or Drive Motor Brake.")
+                st.info("💡 **FIX:** Check for debris in the sprocket. If clear, the internal parking brake in the drive motor may be seized. This usually requires a motor rebuild.")
+            else:
+                st.error("❌ Pilot Pressure Loss (The 'Limp Lever' Issue).")
+                st.write("1. **Check Safety Lever:** Ensure the left-hand safety console is fully down and the internal micro-switch is clicking.")
+                st.write("2. **Jumper Test:** Bypass the safety switch. If tracks move, the switch is bad.")
+                st.write("3. **Check Pilot Relief:** Locate the small pilot manifold. If the relief valve is stuck with a piece of metal/dirt, you will have 0 pilot pressure.")
+
+            st.subheader("Final Drive Leakage Check")
+            st.write("Look at the center of the track motor. Is there oil leaking out of the 'weep hole' or the main seal?")
+            if st.button("YES - Major Leak Detected"):
+                st.error("❌ Internal Seal Failure. The Drive Motor must be replaced to prevent hydraulic system contamination.")
 
     st.markdown("---")
     if st.button("Return to Sitrep"):
