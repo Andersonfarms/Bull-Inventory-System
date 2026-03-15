@@ -134,6 +134,7 @@ st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",
 st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
 st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
+st.sidebar.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
 st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
@@ -262,6 +263,74 @@ elif page == "Inbound Freight":
                 st.rerun()
             except Exception as e:
                 st.error(f"Database Error: {e}")
+
+# --- PAGE: TROUBLESHOOTING GUIDE ---
+elif page == "Troubleshooting":
+    st.title("🛠️ Tactical Field Diagnostics")
+    st.markdown("Interactive repair sequences for Bull 18X/20X units.")
+
+    # Top level issue selection
+    issue_cat = st.selectbox("Identify the System Failure:", 
+                             ["Select system...", "Engine Won't Start (Starting System)", "Battery Not Charging (Electrical System)"])
+
+    if issue_cat == "Engine Won't Start (Starting System)":
+        st.header("⚡ Starting System Diagnostic")
+        
+        # Step 1: E-Stop
+        st.subheader("STEP 1: Emergency Stop Check")
+        st.info("Is the red E-Stop button pressed or locked?")
+        c1, c2 = st.columns(2)
+        if c1.button("YES (Fixed)", key="estop_y"):
+            st.success("✅ Issue Resolved. Logged: E-Stop Reset.")
+        if c2.button("NO (Proceed)", key="estop_n"):
+            
+            # Step 2: The "Hot Start" / Tap Test
+            st.subheader("STEP 2: The 'TAP' Test")
+            st.write("Starters get high internal resistance when hot. Give the starter body a firm (not destructive) tap with a wrench while turning the key.")
+            c3, c4 = st.columns(2)
+            if c3.button("IT FIRED UP (Fixed)", key="tap_y"):
+                st.warning("⚠️ Starter brushes are worn or sticking due to heat. Recommend replacement soon.")
+            if c4.button("NO CHANGE (Proceed)", key="tap_n"):
+                
+                # Step 3: Voltage Drop Test
+                st.subheader("STEP 3: Voltage Drop Test")
+                st.write("Use a multimeter on the battery while cranking.")
+                test_result = st.radio("What is the reading while cranking?", 
+                                       ["Stays at 12.6V (Clicking only)", "Drops below 10V", "Stays at 12V (No clicking)"])
+                
+                if test_result == "Stays at 12.6V (Clicking only)":
+                    st.error("❌ Power isn't reaching the starter. Check the solenoid and the battery terminals for corrosion.")
+                elif test_result == "Drops below 10V":
+                    st.error("❌ Battery is weak or dead. Charge battery or check alternator.")
+                elif test_result == "Stays at 12V (No clicking)":
+                    st.error("❌ Check the 50A Main Fuse and the Ignition Switch 'Start' terminal.")
+
+    elif issue_cat == "Battery Not Charging (Electrical System)":
+        st.header("🔌 Charging System (18X Style)")
+        st.write("Machine is likely running at ~10.8V - 11.8V (running off surface charge).")
+
+        # Step 1: Ignition Wake-up
+        st.subheader("STEP 1: The 'Regulator Wake-Up' Test")
+        st.write("Unplug the 6-pin Regulator. Use a multimeter on the **Orange wire** (harness side) with the Key ON.")
+        if st.radio("Does the Orange wire have 12V?", ["Yes", "No"]) == "No":
+            st.error("❌ Ignition circuit is broken. The regulator won't 'wake up.' Check the 10A 'Meter' fuse.")
+            st.info("💡 **Quick Fix:** Jumper the Red wire pin to the Orange wire pin. If it starts charging (~14V), the Ignition Switch is bad.")
+        else:
+            # Step 2: Stator Output
+            st.subheader("STEP 2: Stator (Alternator) Output")
+            st.write("Unplug the 2-wire connector from the engine. Set meter to **AC Volts**. Run engine at mid-throttle.")
+            ac_volts = st.number_input("Enter AC Voltage reading:", min_value=0.0)
+            if ac_volts > 0 and ac_volts < 20:
+                st.error("❌ Low Output: Check fan belt tension. If the belt slips when hot, it won't spin the alternator fast enough.")
+            elif ac_volts >= 20:
+                st.success("✅ Alternator is GOOD. If it's still not charging, replace the Voltage Regulator (finned box).")
+            elif ac_volts == 0 and st.checkbox("Engine is running"):
+                st.error("❌ Alternator is DEAD or magnets are sheared.")
+
+    st.markdown("---")
+    if st.button("Return to Sitrep"):
+        st.session_state.current_page = "Dashboard"
+        st.rerun()
 
 # --- PAGES: THE DIGITAL LEDGERS ---
 elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
