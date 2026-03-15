@@ -12,7 +12,7 @@ from supabase import create_client, Client
 # --- 0. WHITE-LABEL CONFIGURATION ---
 APP_CONFIG = {
     "company_name": "Bull", 
-    "app_title": "Inventory System",
+    "app_title": "USA System",
     "logo_path": "bull.png", 
     "timezone": "US/Central",
     
@@ -145,8 +145,8 @@ except:
     st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
 
 st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
-st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
-st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
+st.sidebar.button("Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
+st.sidebar.button("Official Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
 
 st.sidebar.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
 st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
@@ -160,14 +160,14 @@ st.sidebar.button("Troubleshooting", on_click=nav_to, args=("Troubleshooting",),
 
 st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
 st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
-st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
+st.sidebar.button("Sales", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
 st.sidebar.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
 
 page = st.session_state.current_page
 
 # --- PAGE: DASHBOARD (SITREP) ---
 if page == "Dashboard":
-    st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
+    st.title(f"📡 {APP_CONFIG['company_name']} Master Overview")
     df = load_inventory()
     
     if not df.empty:
