@@ -1,6 +1,6 @@
 # ==========================================
 # Bull Inventory TERMINAL // DATA-LINK v2.6
-# System Engineered by: NyssaFire Gaming & Michael Anderson
+# System Engineered by: NyssaFire Gaming/Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
 import streamlit as st
@@ -104,7 +104,7 @@ div[data-testid="stFormSubmitButton"] > button:active {
 st.markdown(tactical_css, unsafe_allow_html=True)
 
 header_text = f"""# ==========================================
-# {APP_CONFIG['company_name'].upper()} INVENTORY TERMINAL // DATA-LINK v3.0
+# {APP_CONFIG['company_name'].upper()} INVENTORY TERMINAL // DATA-LINK v2.6
 # System Engineered by: NyssaFire Gaming
 # Core Uplink Established: {datetime.now(pytz.timezone(APP_CONFIG['timezone'])).strftime('%Y-%m-%d // %H:%M %Z')}
 # =========================================="""
