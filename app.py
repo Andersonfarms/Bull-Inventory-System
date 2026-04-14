@@ -3,10 +3,6 @@
 # System Engineered by: NyssaFire Gaming/Michael Anderson
 # Core Uplink Established: 2026-02-17 // 10:13 CST
 # ==========================================
-# ==========================================
-# CORE INVENTORY TERMINAL // DATA-LINK v3.0
-# System Engineered by: NyssaFire Gaming & Michael Anderson
-# ==========================================
 import streamlit as st
 import pandas as pd
 from datetime import datetime
