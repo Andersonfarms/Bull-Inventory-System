@@ -173,40 +173,47 @@ try:
     st.sidebar.image(APP_CONFIG["logo_path"], width=200)
 except:
 # --- 1.6 ROLE-BASED ACCESS CONTROL ---
-    is_sales = st.session_state.user_email in APP_CONFIG["sales_team"]
-    is_admin = st.session_state.user_email == "service@bull-equipment.com"
+is_sales = st.session_state.user_email in APP_CONFIG["sales_team"]
+is_admin = st.session_state.user_email in ["service@bull-equipment.com", "fredrik@bull-equipment.com"]
 
-    # --- SIDEBAR NAVIGATION ---
+# --- SIDEBAR NAVIGATION ---
+with st.sidebar:
     try:
-        st.sidebar.image(APP_CONFIG["logo_path"], width=200)
+        st.image(APP_CONFIG["logo_path"], width=200)
     except:
-        st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
+        st.markdown(f"### {APP_CONFIG['company_name']}")
 
-    st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
-    st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
-    st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
+    st.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
+    st.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
+    st.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
 
-    st.sidebar.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
-    st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
+    st.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
+    st.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
 
-    st.sidebar.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
     
-    # RESTRICTION: Sales team cannot see the main ledgers
+    # HIDE main ledgers from Sales
     if not is_sales:
-        st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
-        st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
-        st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
+        st.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
+        st.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
+        st.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 
-    # Sales CAN see Damaged and Maintenance
-    st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
-    st.sidebar.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
+    # Sales CAN see these
+    st.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
+    st.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
 
-    st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
 
-    # RESTRICTION: Sales cannot add or update status
+    # HIDE Add/Update from Sales
     if not is_sales:
-        st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
-        st.sidebar.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
+        st.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
+        st.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
+
+    st.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
+    
+    if st.button("Logout"):
+        st.session_state.authenticated = False
+        st.rerun()
 
     # Sales CAN perform dispatches
     st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
