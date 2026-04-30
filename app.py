@@ -144,6 +144,11 @@ if not st.session_state.authenticated:
     login_screen()
     st.stop() # Prevents the rest of the app from loading until logged in
 
+# --- 1.6 ROLE-BASED ACCESS CONTROL ---
+# Identify if the user is Sales or Admin
+is_sales = st.session_state.user_email in APP_CONFIG["sales_team"]
+is_admin = st.session_state.user_email == "service@bull-equipment.com", "fredrik@bull-equipment.com" # Or your specific email
+
 # --- 2. DATA LOADERS ---
 def load_inventory():
     response = supabase.table(APP_CONFIG["table_inventory"]).select("*").execute()
@@ -167,29 +172,44 @@ def nav_to(page_name):
 try:
     st.sidebar.image(APP_CONFIG["logo_path"], width=200)
 except:
-    st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
+# --- 1.6 ROLE-BASED ACCESS CONTROL ---
+    is_sales = st.session_state.user_email in APP_CONFIG["sales_team"]
+    is_admin = st.session_state.user_email == "service@bull-equipment.com"
 
-st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
-st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
-st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
+    # --- SIDEBAR NAVIGATION ---
+    try:
+        st.sidebar.image(APP_CONFIG["logo_path"], width=200)
+    except:
+        st.sidebar.markdown(f"### {APP_CONFIG['company_name']}")
 
-st.sidebar.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
-st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
+    st.sidebar.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
+    st.sidebar.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
+    st.sidebar.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
 
-st.sidebar.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
-st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
-st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
-st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
-st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
-st.sidebar.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
+    st.sidebar.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
+    st.sidebar.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
 
-st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
-st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
-st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
-st.sidebar.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
+    st.sidebar.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
+    
+    # RESTRICTION: Sales team cannot see the main ledgers
+    if not is_sales:
+        st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
+        st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
+        st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 
-page = st.session_state.current_page
+    # Sales CAN see Damaged and Maintenance
+    st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
+    st.sidebar.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
 
+    st.sidebar.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
+
+    # RESTRICTION: Sales cannot add or update status
+    if not is_sales:
+        st.sidebar.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
+        st.sidebar.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
+
+    # Sales CAN perform dispatches
+    st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
 # --- PAGE: DASHBOARD (SITREP) ---
 if page == "Dashboard":
     st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
