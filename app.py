@@ -172,6 +172,7 @@ def nav_to(page_name):
 try:
     st.sidebar.image(APP_CONFIG["logo_path"], width=200)
 except:
+    
 # --- 1.6 ROLE-BASED ACCESS CONTROL ---
 is_sales = st.session_state.user_email in APP_CONFIG["sales_team"]
 is_admin = st.session_state.user_email in ["service@bull-equipment.com", "fredrik@bull-equipment.com"]
