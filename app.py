@@ -193,31 +193,30 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
     
-    # HIDE main ledgers from Sales
+    # Only Admin sees these
     if not is_sales:
         st.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",), use_container_width=True)
         st.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
         st.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 
-    # Sales CAN see these
+    # Everyone sees these
     st.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
     st.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
 
     st.markdown('<div class="sidebar-header">LOGISTICS (S-4)</div>', unsafe_allow_html=True)
 
-    # HIDE Add/Update from Sales
+    # Only Admin sees these
     if not is_sales:
         st.button("Add New Stock", on_click=nav_to, args=("Add New Stock",), use_container_width=True)
         st.button("Update Status", on_click=nav_to, args=("Update Inventory",), use_container_width=True)
 
+    # Everyone sees this
     st.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
     
     if st.button("Logout"):
         st.session_state.authenticated = False
         st.rerun()
 
-    # Sales CAN perform dispatches
-    st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
 # --- PAGE: DASHBOARD (SITREP) ---
 # --- ROUTING LOGIC ---
 page = st.session_state.current_page
