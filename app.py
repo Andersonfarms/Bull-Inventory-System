@@ -289,4 +289,8 @@ elif page == "Update Inventory":
 elif page == "Activity Log":
     st.title("📖 Official Duty Log")
     log_df = load_activity()
-    st.dataframe(log_df, use_container_width=True, hide_index=True) if not log_df.empty else st.info("No activity recorded yet.")
+    
+    if not log_df.empty:
+        st.dataframe(log_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No activity recorded yet.")
