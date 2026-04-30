@@ -211,6 +211,8 @@ except:
     # Sales CAN perform dispatches
     st.sidebar.button("Sell / Dispatch", on_click=nav_to, args=("Sell Inventory",), use_container_width=True)
 # --- PAGE: DASHBOARD (SITREP) ---
+# --- ROUTING LOGIC ---
+page = st.session_state.current_page
 if page == "Dashboard":
     st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
     df = load_inventory()
