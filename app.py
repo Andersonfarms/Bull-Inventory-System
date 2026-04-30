@@ -9,6 +9,8 @@ from datetime import datetime
 import pytz
 from supabase import create_client, Client
 
+
+
 # --- 0. WHITE-LABEL CONFIGURATION ---
 APP_CONFIG = {
     "company_name": "Bull", 
@@ -118,6 +120,29 @@ def init_connection():
 
 supabase = init_connection()
 CLIENT_TZ = pytz.timezone(APP_CONFIG['timezone'])
+
+# --- 1.5 AUTHENTICATION GATE ---
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+def login_screen():
+    st.title("🏗️ BULL TERMINAL ACCESS")
+    with st.form("login_form"):
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        if st.form_submit_button("LOG IN"):
+            try:
+                # This talks to your Supabase Auth
+                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                st.session_state.authenticated = True
+                st.session_state.user_email = email
+                st.rerun()
+            except:
+                st.error("Authentication Failed: Invalid Credentials")
+
+if not st.session_state.authenticated:
+    login_screen()
+    st.stop() # Prevents the rest of the app from loading until logged in
 
 # --- 2. DATA LOADERS ---
 def load_inventory():
