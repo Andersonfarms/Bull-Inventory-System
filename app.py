@@ -159,11 +159,67 @@ if page == "Dashboard":
     else:
         st.warning("No inventory found.")
 
+# --- TRACKING LINK GENERATOR ---
+def get_tracking_link(carrier, tracking_number):
+    t_num = str(tracking_number).strip()
+    c_name = str(carrier).upper()
+    if "MAERSK" in c_name: return f"https://www.maersk.com/tracking/{t_num}"
+    elif "CMA" in c_name or "CGM" in c_name: return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={t_num}"
+    elif "MSC" in c_name: return f"https://www.msc.com/en/track-a-shipment?trackingNumber={t_num}"
+    elif "HAPAG" in c_name: return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-booking.html?blno={t_num}"
+    elif "EVERGREEN" in c_name: return f"https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
+    return f"https://www.google.com/search?q={c_name}+tracking+{t_num}" # Fallback
+
+# --- PAGE LOGIC ---
 elif page == "Inbound Freight":
-    st.title("🚢 Inbound Freight")
+    st.title("🚢 Inbound Freight Tracking")
+    
+    # 1. ADD NEW FREIGHT FORM (Admin Only)
+    if is_admin:
+        with st.expander("➕ Register New Inbound Shipment", expanded=False):
+            with st.form("inbound_form", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_tracking = st.text_input("Container / Tracking Number")
+                    new_carrier = st.selectbox("Carrier", APP_CONFIG["carriers"])
+                with col2:
+                    new_contents = st.text_input("Contents (e.g., 20x 12X models)")
+                    new_eta = st.date_input("Estimated Time of Arrival (ETA)")
+                    new_status = st.selectbox("Status", ["In Transit", "Customs", "Arrived", "Delayed"])
+                
+                if st.form_submit_button("Register Shipment") and new_tracking:
+                    try:
+                        # Save to Supabase
+                        supabase.table(APP_CONFIG["table_inbound"]).insert({
+                            "Tracking_Number": new_tracking,
+                            "Carrier": new_carrier,
+                            "Contents": new_contents,
+                            "ETA": str(new_eta),
+                            "Status": new_status
+                        }).execute()
+                        st.success(f"✅ Container {new_tracking} registered successfully!")
+                        st.rerun() # Refresh the page to show the new data
+                    except Exception as e:
+                        st.error(f"Database Error: {e}")
+
+    # 2. LIVE TRACKING BOARD
     inbound_df = load_inbound()
     if not inbound_df.empty:
-        st.dataframe(inbound_df, hide_index=True, use_container_width=True)
+        # Generate the live links for the dataframe
+        inbound_df['Live_Tracking'] = inbound_df.apply(lambda row: get_tracking_link(row['Carrier'], row['Tracking_Number']), axis=1)
+        
+        # Display the interactive dataframe
+        st.dataframe(
+            inbound_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Live_Tracking": st.column_config.LinkColumn("Live Tracker", display_text="Track Shipment 🔗"),
+                "Tracking_Number": st.column_config.TextColumn("Container #")
+            }
+        )
+    else:
+        st.info("No inbound shipments currently active.")
 
 elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged Ledger"]:
     if is_sales and page != "Damaged Ledger":
