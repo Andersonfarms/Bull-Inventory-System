@@ -132,6 +132,17 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
 
+# --- TRACKING LINK GENERATOR ---
+def get_tracking_link(carrier, tracking_number):
+    t_num = str(tracking_number).strip()
+    c_name = str(carrier).upper()
+    if "MAERSK" in c_name: return f"https://www.maersk.com/tracking/{t_num}"
+    elif "CMA" in c_name or "CGM" in c_name: return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={t_num}"
+    elif "MSC" in c_name: return f"https://www.msc.com/en/track-a-shipment?trackingNumber={t_num}"
+    elif "HAPAG" in c_name: return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-booking.html?blno={t_num}"
+    elif "EVERGREEN" in c_name: return f"https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
+    return f"https://www.google.com/search?q={c_name}+tracking+{t_num}" # Fallback
+
 # --- 6. PAGE LOGIC ---
 page = st.session_state.current_page
 
@@ -159,21 +170,10 @@ if page == "Dashboard":
     else:
         st.warning("No inventory found.")
 
-# --- TRACKING LINK GENERATOR ---
-def get_tracking_link(carrier, tracking_number):
-    t_num = str(tracking_number).strip()
-    c_name = str(carrier).upper()
-    if "MAERSK" in c_name: return f"https://www.maersk.com/tracking/{t_num}"
-    elif "CMA" in c_name or "CGM" in c_name: return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={t_num}"
-    elif "MSC" in c_name: return f"https://www.msc.com/en/track-a-shipment?trackingNumber={t_num}"
-    elif "HAPAG" in c_name: return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-booking.html?blno={t_num}"
-    elif "EVERGREEN" in c_name: return f"https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
-    return f"https://www.google.com/search?q={c_name}+tracking+{t_num}" # Fallback
-
 # --- PAGE LOGIC ---
 elif page == "Inbound Freight":
     st.title("🚢 Inbound Freight Tracking")
-    
+   
     # 1. ADD NEW FREIGHT FORM (Admin Only)
     if is_admin:
         with st.expander("➕ Register New Inbound Shipment", expanded=False):
