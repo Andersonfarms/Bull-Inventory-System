@@ -1,5 +1,5 @@
 # ==========================================
-# BULL INVENTORY TERMINAL // DATA-LINK v2.7
+# BULL INVENTORY TERMINAL // DATA-LINK v2.8
 # System Engineered by: NyssaFire Gaming/Michael Anderson
 # ==========================================
 
@@ -18,6 +18,7 @@ APP_CONFIG = {
     "table_inventory": "bull_inventory",
     "table_activity": "bull_activity_log",
     "table_inbound": "bull_inbound_tracking",
+    "table_pdi": "bull_pdi_records", # NEW PDI TABLE
     "machine_models": ["12X", "18X", "20X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Grapple", "Other"],
     "machine_types": ["Excavator", "Skid Steer", "Other"],
     "categories": ["Machine", "Attachment", "Parts", "Other"],
@@ -76,7 +77,7 @@ if not st.session_state.authenticated:
 
 # --- 3. ROLE-BASED ACCESS CONTROL ---
 is_admin = st.session_state.user_email in ADMIN_EMAILS
-is_sales = not is_admin # Anyone not an Admin is treated as Sales
+is_sales = not is_admin 
 
 # --- 4. DATA LOADERS ---
 def load_inventory():
@@ -87,6 +88,20 @@ def load_activity():
 
 def load_inbound():
     return pd.DataFrame(supabase.table(APP_CONFIG["table_inbound"]).select("*").execute().data)
+
+def load_pdi():
+    return pd.DataFrame(supabase.table(APP_CONFIG["table_pdi"]).select("*").order("Date", desc=True).execute().data)
+
+# --- TRACKING LINK GENERATOR ---
+def get_tracking_link(carrier, tracking_number):
+    t_num = str(tracking_number).strip()
+    c_name = str(carrier).upper()
+    if "MAERSK" in c_name: return f"https://www.maersk.com/tracking/{t_num}"
+    elif "CMA" in c_name or "CGM" in c_name: return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={t_num}"
+    elif "MSC" in c_name: return f"https://www.msc.com/en/track-a-shipment?trackingNumber={t_num}"
+    elif "HAPAG" in c_name: return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-booking.html?blno={t_num}"
+    elif "EVERGREEN" in c_name: return f"https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
+    return f"https://www.google.com/search?q={c_name}+tracking+{t_num}" 
 
 # --- 5. SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
@@ -107,6 +122,9 @@ with st.sidebar:
 
     st.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
     st.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
+    
+    # NEW: Completed PDIs (Visible to Sales & Admin)
+    st.button("Completed PDIs", on_click=nav_to, args=("Completed PDIs",), use_container_width=True)
 
     st.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
     
@@ -132,17 +150,6 @@ with st.sidebar:
         st.session_state.authenticated = False
         st.rerun()
 
-# --- TRACKING LINK GENERATOR ---
-def get_tracking_link(carrier, tracking_number):
-    t_num = str(tracking_number).strip()
-    c_name = str(carrier).upper()
-    if "MAERSK" in c_name: return f"https://www.maersk.com/tracking/{t_num}"
-    elif "CMA" in c_name or "CGM" in c_name: return f"https://www.cma-cgm.com/ebusiness/tracking/search?reference={t_num}"
-    elif "MSC" in c_name: return f"https://www.msc.com/en/track-a-shipment?trackingNumber={t_num}"
-    elif "HAPAG" in c_name: return f"https://www.hapag-lloyd.com/en/online-business/track/track-by-booking.html?blno={t_num}"
-    elif "EVERGREEN" in c_name: return f"https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
-    return f"https://www.google.com/search?q={c_name}+tracking+{t_num}" # Fallback
-
 # --- 6. PAGE LOGIC ---
 page = st.session_state.current_page
 
@@ -167,14 +174,62 @@ if page == "Dashboard":
             st.write("**By Category:**")
             cat_counts = df.groupby('Category')['Qty_On_Hand'].sum().reset_index()
             st.dataframe(cat_counts, hide_index=True, use_container_width=True)
+            
+        st.markdown("---")
+        st.markdown("### 📋 Recent Pre-Delivery Inspections")
+        try:
+            pdi_df = load_pdi()
+            if not pdi_df.empty:
+                st.dataframe(pdi_df.head(3), hide_index=True, use_container_width=True)
+            else:
+                st.info("No PDI records found.")
+            # Shortcut Button to full ledger
+            st.button("View Full PDI Ledger", on_click=nav_to, args=("Completed PDIs",))
+        except:
+            st.warning("PDI Database table not found. Ensure 'bull_pdi_records' is created in Supabase.")
     else:
         st.warning("No inventory found.")
 
-# --- PAGE LOGIC ---
+elif page == "Completed PDIs":
+    st.title("📋 Completed Pre-Delivery Inspections")
+    
+    if is_admin:
+        with st.expander("➕ Log New PDI", expanded=False):
+            with st.form("pdi_form", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_vin = st.text_input("VIN / Serial Number")
+                    new_model = st.selectbox("Model", APP_CONFIG["machine_models"])
+                with col2:
+                    new_hours = st.number_input("Machine Hours", min_value=0.0, step=0.1)
+                    new_date = st.date_input("Date Completed")
+                    
+                if st.form_submit_button("Commit PDI Record") and new_vin:
+                    try:
+                        supabase.table(APP_CONFIG["table_pdi"]).insert({
+                            "VIN": new_vin,
+                            "Model": new_model,
+                            "Hours": float(new_hours),
+                            "Date": str(new_date),
+                            "Inspector": st.session_state.user_email
+                        }).execute()
+                        st.success(f"✅ PDI for {new_vin} logged successfully!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Database Error: {e}")
+                        
+    try:
+        pdi_df = load_pdi()
+        if not pdi_df.empty:
+            st.dataframe(pdi_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No completed PDIs logged yet.")
+    except Exception as e:
+        st.error("Error loading PDIs. Ensure 'bull_pdi_records' table is created in Supabase.")
+
 elif page == "Inbound Freight":
     st.title("🚢 Inbound Freight Tracking")
-   
-    # 1. ADD NEW FREIGHT FORM (Admin Only)
+    
     if is_admin:
         with st.expander("➕ Register New Inbound Shipment", expanded=False):
             with st.form("inbound_form", clear_on_submit=True):
@@ -189,30 +244,20 @@ elif page == "Inbound Freight":
                 
                 if st.form_submit_button("Register Shipment") and new_tracking:
                     try:
-                        # Save to Supabase
                         supabase.table(APP_CONFIG["table_inbound"]).insert({
-                            "Tracking_Number": new_tracking,
-                            "Carrier": new_carrier,
-                            "Contents": new_contents,
-                            "ETA": str(new_eta),
-                            "Status": new_status
+                            "Tracking_Number": new_tracking, "Carrier": new_carrier,
+                            "Contents": new_contents, "ETA": str(new_eta), "Status": new_status
                         }).execute()
                         st.success(f"✅ Container {new_tracking} registered successfully!")
-                        st.rerun() # Refresh the page to show the new data
+                        st.rerun()
                     except Exception as e:
                         st.error(f"Database Error: {e}")
 
-    # 2. LIVE TRACKING BOARD
     inbound_df = load_inbound()
     if not inbound_df.empty:
-        # Generate the live links for the dataframe
         inbound_df['Live_Tracking'] = inbound_df.apply(lambda row: get_tracking_link(row['Carrier'], row['Tracking_Number']), axis=1)
-        
-        # Display the interactive dataframe
         st.dataframe(
-            inbound_df,
-            use_container_width=True,
-            hide_index=True,
+            inbound_df, use_container_width=True, hide_index=True,
             column_config={
                 "Live_Tracking": st.column_config.LinkColumn("Live Tracker", display_text="Track Shipment 🔗"),
                 "Tracking_Number": st.column_config.TextColumn("Container #")
@@ -245,7 +290,6 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged 
 elif page == "Troubleshooting":
     st.title("🛠️ Tactical Field Diagnostics")
     st.info("Select a system from the menu above to begin diagnostics.")
-    # (Your troubleshooting text can be re-expanded here as needed)
 
 elif page == "Add New Stock":
     if is_sales:
@@ -272,15 +316,13 @@ elif page == "Add New Stock":
                 supabase.table(APP_CONFIG["table_inventory"]).insert({
                     "ID": new_id, "Model": new_model, "Type": new_type, 
                     "Qty_On_Hand": int(new_qty), "Location": new_loc, 
-                    "Category": new_cat, "Size": new_size, 
-                    "Description": new_desc, "Status": "Available"
+                    "Category": new_cat, "Size": new_size, "Description": new_desc, "Status": "Available"
                 }).execute()
                 
                 supabase.table(APP_CONFIG["table_activity"]).insert({
                     "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
                     "Timestamp": now, "ID": new_id, "Model": new_model, 
-                    "Change": f"Added {new_qty} units", 
-                    "User": st.session_state.user_email
+                    "Change": f"Added {new_qty} units", "User": st.session_state.user_email
                 }).execute()
                 st.success(f"✅ {new_model} successfully stored!")
             except Exception as e:
@@ -307,8 +349,7 @@ elif page == "Sell Inventory":
                             "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
                             "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"), 
                             "ID": selected_id, "Model": item['Model'], 
-                            "Change": f"DISPATCHED {sell_qty}. Notes: {buyer_notes}", 
-                            "User": st.session_state.user_email
+                            "Change": f"DISPATCHED {sell_qty}. Notes: {buyer_notes}", "User": st.session_state.user_email
                         }).execute()
                         st.success("✅ Dispatch executed!")
                     except Exception as e:
@@ -332,11 +373,10 @@ elif page == "Update Inventory":
                     try:
                         supabase.table(APP_CONFIG["table_inventory"]).update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
                         supabase.table(APP_CONFIG["table_activity"]).insert({
-                            "Transaction #": f"TRX-{datetime.now().strftime('%f')}",
-                            "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"),
-                            "ID": selected_id, "Model": item['Model'],
-                            "Change": f"Updated Status to {new_status}. New Qty: {new_qty}",
-                            "User": st.session_state.user_email
+                            "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
+                            "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"), 
+                            "ID": selected_id, "Model": item['Model'], 
+                            "Change": f"Updated Status to {new_status}. New Qty: {new_qty}", "User": st.session_state.user_email
                         }).execute()
                         st.success("✅ Record updated!")
                     except Exception as e:
