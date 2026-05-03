@@ -69,7 +69,8 @@ def login_screen():
                 st.session_state.user_email = email
                 st.rerun()
             except Exception as e:
-                st.error("Authentication Failed: Invalid Credentials")
+                except Exception as e:
+                st.error(f"Authentication Failed: {e}")
 
 if not st.session_state.authenticated:
     login_screen()
