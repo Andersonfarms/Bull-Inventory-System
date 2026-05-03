@@ -20,7 +20,7 @@ APP_CONFIG = {
     "table_inbound": "bull_inbound_tracking",
     "table_pdi": "bull_pdi_records", 
     "table_factory": "bull_factory_orders", # NEW FACTORY TABLE
-    "machine_models": ["18X", "20X", "22X", "25X", "40X", "12X", "1100X", "1200X", "Bucket", "Auger" "8-Auger", "12-Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Grapple", "Mower", "Sand Bucket", "Tilt Bucket", "Other"],
+    "machine_models": ["18X", "20X", "22X", "25X", "40X", "12X", "1100X", "1200X", "Bucket", "Auger", "8-Auger", "12-Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Grapple", "Mower", "Sand Bucket", "Tilt Bucket", "Other"],
     "machine_types": ["Excavator", "Skid Steer", "Other"],
     "categories": ["Machine", "Attachment", "Parts", "Other"],
     "carriers": ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"]
