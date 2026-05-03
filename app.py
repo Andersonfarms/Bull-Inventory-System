@@ -234,27 +234,29 @@ elif page == "Factory Orders":
     st.title("🏭 Factory Orders")
     
     if is_admin:
-        with st.expander("➕ Log New Factory Order", expanded=False):
+        with st.expander("➕ Log New Factory Line Item", expanded=False):
             with st.form("factory_form", clear_on_submit=True):
                 col1, col2 = st.columns(2)
                 with col1:
-                    new_order_num = st.text_input("Factory Order Number (e.g., FO-8832)")
-                    new_items = st.text_input("Items Ordered (e.g., 4x 18X, 2x 20X)")
+                    new_order_num = st.text_input("Order Number (e.g., BUL07)")
+                    new_model = st.selectbox("Model Name", APP_CONFIG["machine_models"])
+                    new_qty = st.number_input("Quantity on Order", min_value=1, step=1)
                 with col2:
                     new_order_date = st.date_input("Date Placed")
-                    new_eta = st.date_input("Expected ETA to Port/Warehouse")
+                    new_eta = st.date_input("Expected ETA")
                     new_status = st.selectbox("Status", ["Processing", "In Production", "Awaiting Shipment", "Delivered"])
                     
-                if st.form_submit_button("Commit Order Record") and new_order_num:
+                if st.form_submit_button("Commit Order Line") and new_order_num:
                     try:
                         supabase.table(APP_CONFIG["table_factory"]).insert({
                             "Order_Number": new_order_num,
-                            "Items": new_items,
+                            "Model": new_model,
+                            "Quantity": int(new_qty),
                             "Order_Date": str(new_order_date),
                             "ETA": str(new_eta),
                             "Status": new_status
                         }).execute()
-                        st.success(f"✅ Order {new_order_num} logged successfully!")
+                        st.success(f"✅ {new_qty}x {new_model} successfully attached to Order {new_order_num}!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Database Error: {e}")
@@ -262,11 +264,14 @@ elif page == "Factory Orders":
     try:
         fact_df = load_factory()
         if not fact_df.empty:
-            st.dataframe(fact_df, use_container_width=True, hide_index=True)
+            # Reorder columns for a cleaner display
+            cols = ["Order_Number", "Model", "Quantity", "Order_Date", "ETA", "Status", "created_at", "id"]
+            existing_cols = [c for c in cols if c in fact_df.columns]
+            st.dataframe(fact_df[existing_cols], use_container_width=True, hide_index=True)
         else:
             st.info("No factory orders logged yet.")
     except Exception as e:
-        st.error("Error loading Orders. Ensure 'bull_factory_orders' table is created in Supabase.")
+        st.error("Error loading Orders. Ensure 'Model' and 'Quantity' columns exist in Supabase.")
 
 elif page == "Completed PDIs":
     st.title("📋 Completed Pre-Delivery Inspections")
