@@ -1,5 +1,5 @@
 # ==========================================
-# BULL INVENTORY TERMINAL // DATA-LINK v2.8
+# BULL INVENTORY TERMINAL // DATA-LINK v2.9
 # System Engineered by: NyssaFire Gaming/Michael Anderson
 # ==========================================
 
@@ -18,7 +18,8 @@ APP_CONFIG = {
     "table_inventory": "bull_inventory",
     "table_activity": "bull_activity_log",
     "table_inbound": "bull_inbound_tracking",
-    "table_pdi": "bull_pdi_records", # NEW PDI TABLE
+    "table_pdi": "bull_pdi_records", 
+    "table_factory": "bull_factory_orders", # NEW FACTORY TABLE
     "machine_models": ["18X", "20X", "22X", "25X", "40X", "12X", "1100X", "1200X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Grapple", "Other"],
     "machine_types": ["Excavator", "Skid Steer", "Other"],
     "categories": ["Machine", "Attachment", "Parts", "Other"],
@@ -92,6 +93,9 @@ def load_inbound():
 def load_pdi():
     return pd.DataFrame(supabase.table(APP_CONFIG["table_pdi"]).select("*").order("Date", desc=True).execute().data)
 
+def load_factory():
+    return pd.DataFrame(supabase.table(APP_CONFIG["table_factory"]).select("*").order("ETA", desc=False).execute().data)
+
 # --- TRACKING LINK GENERATOR ---
 def get_tracking_link(carrier, tracking_number):
     t_num = str(tracking_number).strip()
@@ -117,13 +121,12 @@ with st.sidebar:
         st.markdown(f"### {APP_CONFIG['company_name']}")
 
     st.markdown('<div class="sidebar-header">CORE OPERATIONS</div>', unsafe_allow_html=True)
-    st.button("Sitrep / Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
+    st.button("Dashboard", on_click=nav_to, args=("Dashboard",), use_container_width=True)
     st.button("Official Duty Log", on_click=nav_to, args=("Activity Log",), use_container_width=True)
 
     st.markdown('<div class="sidebar-header">TRACKING</div>', unsafe_allow_html=True)
+    st.button("Factory Orders", on_click=nav_to, args=("Factory Orders",), use_container_width=True) # NEW FACTORY BUTTON
     st.button("Inbound Freight", on_click=nav_to, args=("Inbound Freight",), use_container_width=True)
-    
-    # NEW: Completed PDIs (Visible to Sales & Admin)
     st.button("Completed PDIs", on_click=nav_to, args=("Completed PDIs",), use_container_width=True)
 
     st.markdown('<div class="sidebar-header">DIGITAL LEDGERS</div>', unsafe_allow_html=True)
@@ -154,28 +157,11 @@ with st.sidebar:
 page = st.session_state.current_page
 
 if page == "Dashboard":
-    st.title(f"📡 {APP_CONFIG['company_name']} Sitrep: Master Overview")
-    df = load_inventory()
-    if not df.empty:
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Line Items", len(df))
-        if 'Qty_On_Hand' in df.columns:
-            total_units = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').sum()
-            col2.metric("Total Physical Units", int(total_units))
-        
-        st.markdown("---")
-        st.markdown("### 📊 Active Fleet Breakdown")
-        bc1, bc2 = st.columns(2)
-        with bc1:
-            st.write("**By Specific Model:**")
-            model_counts = df.groupby('Model')['Qty_On_Hand'].sum().reset_index().sort_values(by='Qty_On_Hand', ascending=False)
-            st.dataframe(model_counts, hide_index=True, use_container_width=True)
-        with bc2:
-            st.write("**By Category:**")
-            cat_counts = df.groupby('Category')['Qty_On_Hand'].sum().reset_index()
-            st.dataframe(cat_counts, hide_index=True, use_container_width=True)
-            
-        st.markdown("---")
+    st.title("📊 Dashboard")
+    
+    colA, colB = st.columns(2)
+    
+    with colA:
         st.markdown("### 📋 Recent Pre-Delivery Inspections")
         try:
             pdi_df = load_pdi()
@@ -183,16 +169,107 @@ if page == "Dashboard":
                 st.dataframe(pdi_df.head(3), hide_index=True, use_container_width=True)
             else:
                 st.info("No PDI records found.")
-            # Shortcut Button to full ledger
-            st.button("View Full PDI Ledger", on_click=nav_to, args=("Completed PDIs",))
+            st.button("View Full PDI Ledger", on_click=nav_to, args=("Completed PDIs",), key="btn_pdi")
         except:
-            st.warning("PDI Database table not found. Ensure 'bull_pdi_records' is created in Supabase.")
+            st.warning("PDI Database table not found.")
+
+    with colB:
+        st.markdown("### 🏭 Upcoming Factory Orders")
+        try:
+            fact_df = load_factory()
+            if not fact_df.empty:
+                # Filter out delivered orders to only show upcoming
+                upcoming = fact_df[fact_df['Status'] != 'Delivered']
+                st.dataframe(upcoming.head(3), hide_index=True, use_container_width=True)
+            else:
+                st.info("No factory orders placed.")
+            st.button("View Factory Ledger", on_click=nav_to, args=("Factory Orders",), key="btn_fact")
+        except:
+            st.warning("Ensure 'bull_factory_orders' is created in Supabase.")
+
+    st.markdown("---")
+    
+    # --- MASTER OVERVIEW METRICS ---
+    df = load_inventory()
+    if not df.empty:
+        col1, col2 = st.columns(2)
+        col1.metric("Total Line Items", len(df))
+        if 'Qty_On_Hand' in df.columns:
+            total_units = pd.to_numeric(df['Qty_On_Hand'], errors='coerce').sum()
+            col2.metric("Total Physical Units", int(total_units))
+        
+        st.markdown("---")
+        
+        # --- ACTIVE FLEET BREAKDOWN ---
+        st.markdown("### 📊 Active Fleet Breakdown")
+        bc1, bc2, bc3 = st.columns(3)
+        
+        with bc1:
+            st.write("**Machines:**")
+            mach_df = df[df['Category'] == 'Machine']
+            if not mach_df.empty:
+                mach_counts = mach_df.groupby('Model')['Qty_On_Hand'].sum().reset_index().sort_values(by='Qty_On_Hand', ascending=False)
+                st.dataframe(mach_counts, hide_index=True, use_container_width=True)
+            else:
+                st.info("No Machines.")
+                
+        with bc2:
+            st.write("**Attachments & Others:**")
+            att_df = df[df['Category'] != 'Machine']
+            if not att_df.empty:
+                att_counts = att_df.groupby('Model')['Qty_On_Hand'].sum().reset_index().sort_values(by='Qty_On_Hand', ascending=False)
+                st.dataframe(att_counts, hide_index=True, use_container_width=True)
+            else:
+                st.info("No Attachments.")
+                
+        with bc3:
+            st.write("**By Category:**")
+            cat_counts = df.groupby('Category')['Qty_On_Hand'].sum().reset_index()
+            st.dataframe(cat_counts, hide_index=True, use_container_width=True)
+            
     else:
         st.warning("No inventory found.")
 
+elif page == "Factory Orders":
+    st.title("🏭 Factory Orders")
+    
+    if is_admin:
+        with st.expander("➕ Log New Factory Order", expanded=False):
+            with st.form("factory_form", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                with col1:
+                    new_order_num = st.text_input("Factory Order Number (e.g., FO-8832)")
+                    new_items = st.text_input("Items Ordered (e.g., 4x 18X, 2x 20X)")
+                with col2:
+                    new_order_date = st.date_input("Date Placed")
+                    new_eta = st.date_input("Expected ETA to Port/Warehouse")
+                    new_status = st.selectbox("Status", ["Processing", "In Production", "Awaiting Shipment", "Delivered"])
+                    
+                if st.form_submit_button("Commit Order Record") and new_order_num:
+                    try:
+                        supabase.table(APP_CONFIG["table_factory"]).insert({
+                            "Order_Number": new_order_num,
+                            "Items": new_items,
+                            "Order_Date": str(new_order_date),
+                            "ETA": str(new_eta),
+                            "Status": new_status
+                        }).execute()
+                        st.success(f"✅ Order {new_order_num} logged successfully!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Database Error: {e}")
+                        
+    try:
+        fact_df = load_factory()
+        if not fact_df.empty:
+            st.dataframe(fact_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No factory orders logged yet.")
+    except Exception as e:
+        st.error("Error loading Orders. Ensure 'bull_factory_orders' table is created in Supabase.")
+
 elif page == "Completed PDIs":
     st.title("📋 Completed Pre-Delivery Inspections")
-    
     if is_admin:
         with st.expander("➕ Log New PDI", expanded=False):
             with st.form("pdi_form", clear_on_submit=True):
@@ -203,21 +280,13 @@ elif page == "Completed PDIs":
                 with col2:
                     new_hours = st.number_input("Machine Hours", min_value=0.0, step=0.1)
                     new_date = st.date_input("Date Completed")
-                    
                 if st.form_submit_button("Commit PDI Record") and new_vin:
                     try:
-                        supabase.table(APP_CONFIG["table_pdi"]).insert({
-                            "VIN": new_vin,
-                            "Model": new_model,
-                            "Hours": float(new_hours),
-                            "Date": str(new_date),
-                            "Inspector": st.session_state.user_email
-                        }).execute()
+                        supabase.table(APP_CONFIG["table_pdi"]).insert({"VIN": new_vin, "Model": new_model, "Hours": float(new_hours), "Date": str(new_date), "Inspector": st.session_state.user_email }).execute()
                         st.success(f"✅ PDI for {new_vin} logged successfully!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Database Error: {e}")
-                        
     try:
         pdi_df = load_pdi()
         if not pdi_df.empty:
@@ -229,7 +298,6 @@ elif page == "Completed PDIs":
 
 elif page == "Inbound Freight":
     st.title("🚢 Inbound Freight Tracking")
-    
     if is_admin:
         with st.expander("➕ Register New Inbound Shipment", expanded=False):
             with st.form("inbound_form", clear_on_submit=True):
@@ -241,28 +309,17 @@ elif page == "Inbound Freight":
                     new_contents = st.text_input("Contents (e.g., 20x 12X models)")
                     new_eta = st.date_input("Estimated Time of Arrival (ETA)")
                     new_status = st.selectbox("Status", ["In Transit", "Customs", "Arrived", "Delayed"])
-                
                 if st.form_submit_button("Register Shipment") and new_tracking:
                     try:
-                        supabase.table(APP_CONFIG["table_inbound"]).insert({
-                            "Tracking_Number": new_tracking, "Carrier": new_carrier,
-                            "Contents": new_contents, "ETA": str(new_eta), "Status": new_status
-                        }).execute()
+                        supabase.table(APP_CONFIG["table_inbound"]).insert({"Tracking_Number": new_tracking, "Carrier": new_carrier, "Contents": new_contents, "ETA": str(new_eta), "Status": new_status }).execute()
                         st.success(f"✅ Container {new_tracking} registered successfully!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Database Error: {e}")
-
     inbound_df = load_inbound()
     if not inbound_df.empty:
         inbound_df['Live_Tracking'] = inbound_df.apply(lambda row: get_tracking_link(row['Carrier'], row['Tracking_Number']), axis=1)
-        st.dataframe(
-            inbound_df, use_container_width=True, hide_index=True,
-            column_config={
-                "Live_Tracking": st.column_config.LinkColumn("Live Tracker", display_text="Track Shipment 🔗"),
-                "Tracking_Number": st.column_config.TextColumn("Container #")
-            }
-        )
+        st.dataframe(inbound_df, use_container_width=True, hide_index=True, column_config={"Live_Tracking": st.column_config.LinkColumn("Live Tracker", display_text="Track Shipment 🔗"), "Tracking_Number": st.column_config.TextColumn("Container #") } )
     else:
         st.info("No inbound shipments currently active.")
 
@@ -270,7 +327,6 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged 
     if is_sales and page != "Damaged Ledger":
         st.error("🚫 RESTRICTED: Admin Clearance Required.")
         st.stop()
-        
     st.title(f"📂 {page}")
     df = load_inventory()
     if not df.empty:
@@ -278,7 +334,6 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Damaged 
         elif page == "Attachment Ledger": df = df[df['Category'] == 'Attachment']
         elif page == "Parts Ledger": df = df[df['Category'] == 'Parts']
         elif page == "Damaged Ledger": df = df[df['Status'] == 'Damaged']
-        
         search = st.text_input(f"🔍 Search {page}:")
         if search:
             mask = pd.Series(False, index=df.index)
@@ -295,7 +350,6 @@ elif page == "Add New Stock":
     if is_sales:
         st.error("🚫 RESTRICTED: High-Level Logistics Clearance Required to Add Stock.")
         st.stop()
-        
     st.title("➕ Logistics: Register New Stock")
     with st.form("add_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -309,21 +363,11 @@ elif page == "Add New Stock":
             new_size = st.selectbox("Size", ["N/A", "8\"", "12\"", "18\"", "24\"", "Small", "Large"])
             new_desc = st.text_input("Part Description (Optional)", "N/A")
             new_loc = st.text_input("Location", value="Warehouse")
-            
         if st.form_submit_button("Commit to Database") and new_id:
             now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
             try:
-                supabase.table(APP_CONFIG["table_inventory"]).insert({
-                    "ID": new_id, "Model": new_model, "Type": new_type, 
-                    "Qty_On_Hand": int(new_qty), "Location": new_loc, 
-                    "Category": new_cat, "Size": new_size, "Description": new_desc, "Status": "Available"
-                }).execute()
-                
-                supabase.table(APP_CONFIG["table_activity"]).insert({
-                    "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
-                    "Timestamp": now, "ID": new_id, "Model": new_model, 
-                    "Change": f"Added {new_qty} units", "User": st.session_state.user_email
-                }).execute()
+                supabase.table(APP_CONFIG["table_inventory"]).insert({"ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), "Location": new_loc, "Category": new_cat, "Size": new_size, "Description": new_desc, "Status": "Available" }).execute()
+                supabase.table(APP_CONFIG["table_activity"]).insert({"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": new_id, "Model": new_model, "Change": f"Added {new_qty} units", "User": st.session_state.user_email }).execute()
                 st.success(f"✅ {new_model} successfully stored!")
             except Exception as e:
                 st.error(f"Database Error: {e}")
@@ -339,18 +383,12 @@ elif page == "Sell Inventory":
             with st.form("sell_form"):
                 sell_qty = st.number_input("Quantity Dispatched", min_value=1, max_value=int(item['Qty_On_Hand']))
                 buyer_notes = st.text_input("Dispatch Notes / Buyer Name")
-                
                 if st.form_submit_button("Execute Dispatch"):
                     new_qty = int(item['Qty_On_Hand']) - sell_qty
                     new_status = "Sold" if new_qty == 0 else item.get('Status', 'Available')
                     try:
                         supabase.table(APP_CONFIG["table_inventory"]).update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
-                        supabase.table(APP_CONFIG["table_activity"]).insert({
-                            "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
-                            "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"), 
-                            "ID": selected_id, "Model": item['Model'], 
-                            "Change": f"DISPATCHED {sell_qty}. Notes: {buyer_notes}", "User": st.session_state.user_email
-                        }).execute()
+                        supabase.table(APP_CONFIG["table_activity"]).insert({"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"), "ID": selected_id, "Model": item['Model'], "Change": f"DISPATCHED {sell_qty}. Notes: {buyer_notes}", "User": st.session_state.user_email }).execute()
                         st.success("✅ Dispatch executed!")
                     except Exception as e:
                         st.error(f"Error: {e}")
@@ -359,7 +397,6 @@ elif page == "Update Inventory":
     if is_sales:
         st.error("🚫 RESTRICTED: Admin Clearance Required.")
         st.stop()
-        
     st.title("🔄 Logistics: Update Status")
     df = load_inventory()
     if not df.empty:
@@ -372,12 +409,7 @@ elif page == "Update Inventory":
                 if st.form_submit_button("Update Database"):
                     try:
                         supabase.table(APP_CONFIG["table_inventory"]).update({"Qty_On_Hand": new_qty, "Status": new_status}).eq("ID", selected_id).execute()
-                        supabase.table(APP_CONFIG["table_activity"]).insert({
-                            "Transaction #": f"TRX-{datetime.now().strftime('%f')}", 
-                            "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"), 
-                            "ID": selected_id, "Model": item['Model'], 
-                            "Change": f"Updated Status to {new_status}. New Qty: {new_qty}", "User": st.session_state.user_email
-                        }).execute()
+                        supabase.table(APP_CONFIG["table_activity"]).insert({"Transaction #": f"TRX-{datetime.now().strftime('%f')}", "Timestamp": datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S"), "ID": selected_id, "Model": item['Model'], "Change": f"Updated Status to {new_status}. New Qty: {new_qty}", "User": st.session_state.user_email }).execute()
                         st.success("✅ Record updated!")
                     except Exception as e:
                         st.error(f"Error: {e}")
@@ -385,7 +417,6 @@ elif page == "Update Inventory":
 elif page == "Activity Log":
     st.title("📖 Official Duty Log")
     log_df = load_activity()
-    
     if not log_df.empty:
         st.dataframe(log_df, use_container_width=True, hide_index=True)
     else:
