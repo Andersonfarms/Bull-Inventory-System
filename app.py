@@ -19,7 +19,7 @@ APP_CONFIG = {
     "table_activity": "bull_activity_log",
     "table_inbound": "bull_inbound_tracking",
     "table_pdi": "bull_pdi_records", # NEW PDI TABLE
-    "machine_models": ["12X", "18X", "20X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Grapple", "Other"],
+    "machine_models": ["18X", "20X", "22X", "25X", "40X", "12X", "1100X", "1200X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Grapple", "Other"],
     "machine_types": ["Excavator", "Skid Steer", "Other"],
     "categories": ["Machine", "Attachment", "Parts", "Other"],
     "carriers": ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"]
