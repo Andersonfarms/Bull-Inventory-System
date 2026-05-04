@@ -275,23 +275,36 @@ elif page == "Factory Orders":
 
 elif page == "Completed PDIs":
     st.title("📋 Completed Pre-Delivery Inspections")
+    
     if is_admin:
         with st.expander("➕ Log New PDI", expanded=False):
             with st.form("pdi_form", clear_on_submit=True):
-                col1, col2 = st.columns(2)
+                col1, col2, col3 = st.columns(3)
+                
                 with col1:
                     new_vin = st.text_input("VIN / Serial Number")
                     new_model = st.selectbox("Model", APP_CONFIG["machine_models"])
                 with col2:
                     new_hours = st.number_input("Machine Hours", min_value=0.0, step=0.1)
+                    new_volts = st.number_input("Battery Volts", min_value=0.0, step=0.1, value=12.0)
+                with col3:
                     new_date = st.date_input("Date Completed")
+                    
                 if st.form_submit_button("Commit PDI Record") and new_vin:
                     try:
-                        supabase.table(APP_CONFIG["table_pdi"]).insert({"VIN": new_vin, "Model": new_model, "Hours": float(new_hours), "Date": str(new_date), "Inspector": st.session_state.user_email }).execute()
+                        supabase.table(APP_CONFIG["table_pdi"]).insert({
+                            "VIN": new_vin, 
+                            "Model": new_model, 
+                            "Hours": float(new_hours), 
+                            "Volts": float(new_volts),
+                            "Date": str(new_date), 
+                            "Inspector": st.session_state.user_email 
+                        }).execute()
                         st.success(f"✅ PDI for {new_vin} logged successfully!")
                         st.rerun()
                     except Exception as e:
                         st.error(f"Database Error: {e}")
+                        
     try:
         pdi_df = load_pdi()
         if not pdi_df.empty:
@@ -299,7 +312,7 @@ elif page == "Completed PDIs":
         else:
             st.info("No completed PDIs logged yet.")
     except Exception as e:
-        st.error("Error loading PDIs. Ensure 'bull_pdi_records' table is created in Supabase.")
+        st.error("Error loading PDIs. Ensure 'Volts' column is created in Supabase.")
 
 elif page == "Inbound Freight":
     st.title("🚢 Inbound Freight Tracking")
