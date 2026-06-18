@@ -104,12 +104,6 @@ div[data-testid="stFormSubmitButton"] > button:active {
 """
 st.markdown(tactical_css, unsafe_allow_html=True)
 
-header_text = f"""# ==========================================
-# {APP_CONFIG['company_name'].upper()} INVENTORY TERMINAL // DATA-LINK v4.0
-# System Engineered by: NyssaFire Gaming
-# Core Uplink Established: {datetime.now(pytz.timezone(APP_CONFIG['timezone'])).strftime('%Y-%m-%d // %H:%M %Z')}
-# =========================================="""
-st.code(header_text, language="text")
 
 @st.cache_resource
 def init_connection():
