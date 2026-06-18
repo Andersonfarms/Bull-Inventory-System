@@ -202,9 +202,26 @@ if page == "Dashboard":
 # --- PAGE: SERVICE MASTER SHEET ---
 elif page == "Service Master Sheet":
     st.title("📋 Live Service Master Sheet")
-    st.markdown("Google Workspace Integration active. Edit directly below.")
+    st.markdown("Google Workspace Integration active. Tactical Dark Mode applied. Edit directly below.")
     sheet_url = "https://docs.google.com/spreadsheets/d/110U282cubI4SIL6UL5mN3l3DiQFzulMCnkrFMgJ1VBo/edit?embedded=true"
-    components.iframe(sheet_url, height=800, scrolling=True)
+    
+    # CSS trick to force the Google Sheet iframe into Dark Mode
+    dark_sheet_html = f"""
+    <style>
+        .dark-iframe-container iframe {{
+            filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
+            border: 2px solid #333333;
+            border-radius: 5px;
+            background-color: white; /* Prevents weird transparency glitches */
+        }}
+    </style>
+    <div class="dark-iframe-container">
+        <iframe src="{sheet_url}" width="100%" height="800px"></iframe>
+    </div>
+    """
+    
+    # Render the custom HTML instead of the standard components.iframe
+    st.components.v1.html(dark_sheet_html, height=805)
 
 # --- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
 elif page == "Inbound Freight":
