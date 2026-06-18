@@ -515,10 +515,11 @@ elif page == "Sell Inventory":
 
                         # Process Auto-Bundles (Ripper, 40" Bucket, 8" Bucket) if applicable
                         if addon_success and is_bundled_machine:
+                            # UPDATED: Model names now exactly match the Supabase Database entries
                             required_attachments = [
                                 {'Model': 'Ripper', 'Size': 'N/A'},
-                                {'Model': 'Bucket', 'Size': '40"'},
-                                {'Model': 'Bucket', 'Size': '8"'}
+                                {'Model': 'Bucket 40"', 'Size': '40"'},
+                                {'Model': 'Bucket 8"', 'Size': '8"'}
                             ]
                             
                             for req in required_attachments:
@@ -526,7 +527,6 @@ elif page == "Sell Inventory":
                                     match = available_items[(available_items['Model'] == 'Ripper') & (available_items['Qty_On_Hand'] > 0)]
                                 else:
                                     match = available_items[(available_items['Model'] == req['Model']) & (available_items['Size'] == req['Size']) & (available_items['Qty_On_Hand'] > 0)]
-                                
                                 if not match.empty:
                                     target = match.iloc[0]
                                     target_id = target['ID']
