@@ -20,7 +20,8 @@ APP_CONFIG = {
     # Database Tables
     "table_inventory": "bull_inventory",        
     "table_activity": "bull_activity_log",      
-    "table_inbound": "bull_inbound_tracking",   
+    "table_inbound": "bull_inbound_tracking",
+    "table_pdi": "bull_pdi_records",
     
     # Dropdowns
     "sales_team": ["Fredrik L.", "Bailey A.", "Admin", "Other"],
@@ -104,6 +105,12 @@ div[data-testid="stFormSubmitButton"] > button:active {
 """
 st.markdown(tactical_css, unsafe_allow_html=True)
 
+header_text = f"""# ==========================================
+# {APP_CONFIG['company_name'].upper()} INVENTORY TERMINAL // DATA-LINK v4.1
+# System Engineered by: NyssaFire Gaming
+# Core Uplink Established: {datetime.now(pytz.timezone(APP_CONFIG['timezone'])).strftime('%Y-%m-%d // %H:%M %Z')}
+# =========================================="""
+st.code(header_text, language="text")
 
 @st.cache_resource
 def init_connection():
@@ -125,6 +132,10 @@ def load_activity():
 
 def load_inbound():
     response = supabase.table(APP_CONFIG["table_inbound"]).select("*").execute()
+    return pd.DataFrame(response.data)
+
+def load_pdi():
+    response = supabase.table(APP_CONFIG["table_pdi"]).select("*").execute()
     return pd.DataFrame(response.data)
 
 # --- 3. THE TACTICAL SIDEBAR ROUTER ---
@@ -152,6 +163,7 @@ st.sidebar.button("Equipment Ledger", on_click=nav_to, args=("Equipment Ledger",
 st.sidebar.button("Attachment Ledger", on_click=nav_to, args=("Attachment Ledger",), use_container_width=True)
 st.sidebar.button("Parts Ledger", on_click=nav_to, args=("Parts Ledger",), use_container_width=True)
 st.sidebar.button("Sold Ledger", on_click=nav_to, args=("Sold Ledger",), use_container_width=True)
+st.sidebar.button("PDI Records", on_click=nav_to, args=("PDI Records",), use_container_width=True)
 st.sidebar.button("Damaged Ledger", on_click=nav_to, args=("Damaged Ledger",), use_container_width=True)
 st.sidebar.button("🛠️ Troubleshooting", on_click=nav_to, args=("Troubleshooting",), use_container_width=True)
 
@@ -205,22 +217,19 @@ elif page == "Service Master Sheet":
     st.markdown("Google Workspace Integration active. Tactical Dark Mode applied. Edit directly below.")
     sheet_url = "https://docs.google.com/spreadsheets/d/110U282cubI4SIL6UL5mN3l3DiQFzulMCnkrFMgJ1VBo/edit?embedded=true"
     
-    # CSS trick to force the Google Sheet iframe into Dark Mode
     dark_sheet_html = f"""
     <style>
         .dark-iframe-container iframe {{
             filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(95%);
             border: 2px solid #333333;
             border-radius: 5px;
-            background-color: white; /* Prevents weird transparency glitches */
+            background-color: white; 
         }}
     </style>
     <div class="dark-iframe-container">
         <iframe src="{sheet_url}" width="100%" height="800px"></iframe>
     </div>
     """
-    
-    # Render the custom HTML instead of the standard components.iframe
     st.components.v1.html(dark_sheet_html, height=805)
 
 # --- PAGE: INBOUND FREIGHT (DYNAMIC TRACKING) ---
@@ -300,7 +309,6 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Sold Led
     df = load_inventory()
     
     if not df.empty:
-        # Dynamically route data based on ledger selected. Exclude 'Sold' from active ledgers.
         if page == "Equipment Ledger": 
             df = df[(df['Category'] == 'Machine') & (df['Status'] != 'Sold')]
         elif page == "Attachment Ledger": 
@@ -323,6 +331,58 @@ elif page in ["Equipment Ledger", "Attachment Ledger", "Parts Ledger", "Sold Led
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.warning(f"No records found for {page}.")
+
+# --- PAGE: PDI RECORDS ---
+elif page == "PDI Records":
+    st.title("📋 Pre-Delivery Inspections (PDI)")
+    
+    st.subheader("Active PDI Ledger")
+    pdi_df = load_pdi()
+    if not pdi_df.empty:
+        st.dataframe(pdi_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("No PDI records found in database.")
+        
+    st.markdown("---")
+    st.subheader("➕ Log New PDI")
+    
+    with st.form("pdi_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            pdi_vin = st.text_input("VIN / Serial Number")
+            pdi_model = st.selectbox("Machine Model", APP_CONFIG["machine_models"])
+            pdi_inspector = st.text_input("Inspector Email", value="service@bull-equipment.com")
+            
+        with col2:
+            pdi_hours = st.number_input("Meter Hours", min_value=0.0, step=0.1)
+            pdi_volts = st.number_input("Battery Volts (DC)", min_value=0.0, step=0.1)
+            pdi_date = st.date_input("Inspection Date", datetime.now(CLIENT_TZ).date())
+            
+        if st.form_submit_button("Submit PDI Record"):
+            if pdi_vin:
+                new_pdi = {
+                    "VIN": pdi_vin,
+                    "Model": pdi_model,
+                    "Hours": float(pdi_hours),
+                    "Date": pdi_date.strftime("%Y-%m-%d"),
+                    "Inspector": pdi_inspector,
+                    "Volts": float(pdi_volts)
+                }
+                try:
+                    supabase.table(APP_CONFIG["table_pdi"]).insert(new_pdi).execute()
+                    
+                    # Log activity
+                    now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                    trx_id = f"PDI-{datetime.now().strftime('%f')}" 
+                    log_entry = {"Transaction #": trx_id, "Timestamp": now, "ID": pdi_vin, "Model": pdi_model, "Change": f"Completed PDI: {pdi_hours} hrs | {pdi_volts}V", "User": pdi_inspector}
+                    supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
+                    
+                    st.success(f"✅ PDI Logged for VIN: {pdi_vin}")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Database Error: {e}")
+            else:
+                st.warning("⚠️ Please enter a valid VIN.")
 
 # --- PAGE: TROUBLESHOOTING GUIDE ---
 elif page == "Troubleshooting":
@@ -532,7 +592,6 @@ elif page == "Sell Inventory":
 
                         # Process Auto-Bundles (Ripper, 40" Bucket, 8" Bucket) if applicable
                         if addon_success and is_bundled_machine:
-                            # UPDATED: Model names now exactly match the Supabase Database entries
                             required_attachments = [
                                 {'Model': 'Ripper', 'Size': 'N/A'},
                                 {'Model': 'Bucket 40"', 'Size': '40"'},
@@ -544,6 +603,7 @@ elif page == "Sell Inventory":
                                     match = available_items[(available_items['Model'] == 'Ripper') & (available_items['Qty_On_Hand'] > 0)]
                                 else:
                                     match = available_items[(available_items['Model'] == req['Model']) & (available_items['Size'] == req['Size']) & (available_items['Qty_On_Hand'] > 0)]
+                                
                                 if not match.empty:
                                     target = match.iloc[0]
                                     target_id = target['ID']
