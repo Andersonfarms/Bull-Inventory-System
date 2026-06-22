@@ -131,31 +131,45 @@ def load_pdi():
     response = supabase.table(APP_CONFIG["table_pdi"]).select("*").execute()
     return pd.DataFrame(response.data)
 
-# --- 2.5 SECURITY GATEWAY ---
+# --- 2.5 SECURITY GATEWAY (SUPABASE AUTH) ---
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
+    st.session_state['user_email'] = None
 
 if not st.session_state['authenticated']:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown(f"### 🔒 {APP_CONFIG['company_name'].upper()} TERMINAL ACCESS")
-        st.info("Authorized Personnel Only. Please enter your clearance code.")
+        st.info("Authorized Personnel Only. Please sign in via Supabase.")
         
         with st.form("login_form"):
-            auth_code = st.text_input("Clearance Code", type="password")
-            submit_login = st.form_submit_button("UPLINK")
+            auth_email = st.text_input("Email Address")
+            auth_password = st.text_input("Password", type="password")
+            submit_login = st.form_submit_button("UPLINK / LOGIN")
             
             if submit_login:
-                # Replace 'BullOps2026' with whatever password you want to use
-                if auth_code == "BullOps2026": 
-                    st.session_state['authenticated'] = True
-                    st.success("Access Granted. Initializing systems...")
-                    st.rerun()
+                if auth_email and auth_password:
+                    try:
+                        # Ping Supabase to verify credentials
+                        auth_response = supabase.auth.sign_in_with_password({
+                            "email": auth_email,
+                            "password": auth_password
+                        })
+                        
+                        # If successful, lock in the session
+                        if auth_response.user:
+                            st.session_state['authenticated'] = True
+                            st.session_state['user_email'] = auth_response.user.email
+                            st.success("Authentication Confirmed. Initializing systems...")
+                            st.rerun()
+                    except Exception as e:
+                        # Supabase throws an exception if the password or email is wrong
+                        st.error("❌ Access Denied. Invalid Email or Password.")
                 else:
-                    st.error("❌ Access Denied. Invalid Code.")
+                    st.warning("Please enter both email and password.")
     
-    # This st.stop() is the magic lock. It prevents the rest of the app from loading!
+    # Halt app execution until authenticated
     st.stop()
 
 # --- 3. THE TACTICAL SIDEBAR ROUTER ---
