@@ -131,6 +131,33 @@ def load_pdi():
     response = supabase.table(APP_CONFIG["table_pdi"]).select("*").execute()
     return pd.DataFrame(response.data)
 
+# --- 2.5 SECURITY GATEWAY ---
+if 'authenticated' not in st.session_state:
+    st.session_state['authenticated'] = False
+
+if not st.session_state['authenticated']:
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown(f"### 🔒 {APP_CONFIG['company_name'].upper()} TERMINAL ACCESS")
+        st.info("Authorized Personnel Only. Please enter your clearance code.")
+        
+        with st.form("login_form"):
+            auth_code = st.text_input("Clearance Code", type="password")
+            submit_login = st.form_submit_button("UPLINK")
+            
+            if submit_login:
+                # Replace 'BullOps2026' with whatever password you want to use
+                if auth_code == "BullOps2026": 
+                    st.session_state['authenticated'] = True
+                    st.success("Access Granted. Initializing systems...")
+                    st.rerun()
+                else:
+                    st.error("❌ Access Denied. Invalid Code.")
+    
+    # This st.stop() is the magic lock. It prevents the rest of the app from loading!
+    st.stop()
+
 # --- 3. THE TACTICAL SIDEBAR ROUTER ---
 if 'current_page' not in st.session_state:
     st.session_state.current_page = "Dashboard"
