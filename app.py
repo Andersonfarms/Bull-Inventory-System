@@ -25,7 +25,7 @@ APP_CONFIG = {
     
     # Dropdowns
     "sales_team": ["Fredrik L.", "Bailey A.", "Admin", "Other"],
-    "machine_models": ["12X", "18X", "20X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Other"],
+    "machine_models": ["12X", "18X", "20X", "22X", "25X", "40X", "1100X", "Bucket", "Auger", "Ripper", "Rake", "Forks", "Wood Splitter", "Hedge Trimmers", "Hammer", "Tilt Bucket", "Other"],
     "machine_types": ["Excavator", "Skid Steer", "Other"],
     "categories": ["Machine", "Attachment", "Parts", "Other"],
     "carriers": ["Maersk", "CMA-CGM", "MSC", "Hapag-Lloyd", "Evergreen", "Other"]
