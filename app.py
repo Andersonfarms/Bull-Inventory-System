@@ -527,36 +527,142 @@ elif page == "Troubleshooting":
         st.session_state.current_page = "Dashboard"
         st.rerun()
 
-# --- PAGE: ADD NEW STOCK ---
+# --- PAGE: ADD / RECEIVE STOCK ---
 elif page == "Add New Stock":
-    st.title("➕ Logistics: Register New Stock")
-    with st.form("add_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            new_id = st.text_input("Item ID (e.g., A-9PWW)")
-            new_model = st.selectbox("Model Name", APP_CONFIG["machine_models"])
-            new_type = st.selectbox("Machine Type", APP_CONFIG["machine_types"])
-            new_qty = st.number_input("Quantity", min_value=1, step=1)
+    st.title("➕ Logistics: Stock & Inbound Management")
+    
+    tab1, tab2 = st.tabs(["Log New Stock / Orders", "Receive Arrived Stock"])
+    
+    with tab1:
+        st.markdown("### Register Inventory or Inbound Orders")
+        with st.form("add_form", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                stock_status = st.radio("Stock State:", ["On Hand (Available)", "On Order (In Transit)"])
+                new_id = st.text_input("Item ID / VIN (Leave blank if On Order/Unknown)")
+                new_model = st.selectbox("Model Name", APP_CONFIG["machine_models"])
+                new_type = st.selectbox("Machine Type", APP_CONFIG["machine_types"])
+                new_qty = st.number_input("Quantity", min_value=1, step=1)
+                
+            with col2:
+                new_cat = st.selectbox("Category", APP_CONFIG["categories"])
+                new_size = st.selectbox("Size", ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"])
+                new_desc = st.selectbox("Part Description", ["N/A", "Air Filter", "Oil Filter", "Hydraulic Filter", "Fuel Filter", "Hydraulic Hose", "O-Rings / Seals", "Track Assembly", "Sprocket / Idler", "Teeth / Cutting Edge", "Pins & Bushings", "Electrical Relay / Fuse", "Sensors", "Hardware / Fasteners", "Fluids / Grease", "Other"])
+                new_loc = st.text_input("Location", value="Warehouse")
+                
+            if st.form_submit_button("Commit to Database"):
+                now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                trx_id = f"TRX-{datetime.now().strftime('%f')}" 
+                
+                # Auto-generate temporary PO ID if left blank
+                final_id = new_id if new_id else f"PO-{new_model}-{datetime.now().strftime('%m%d%H%M')}"
+                
+                qty_hand = int(new_qty) if stock_status == "On Hand (Available)" else 0
+                qty_order = int(new_qty) if stock_status == "On Order (In Transit)" else 0
+                db_status = "Available" if stock_status == "On Hand (Available)" else "In Transit"
+                
+                new_item = {
+                    "ID": final_id, 
+                    "Model": new_model, 
+                    "Type": new_type, 
+                    "Qty_On_Hand": qty_hand,
+                    "Qty_On_Order": qty_order,
+                    "Location": new_loc, 
+                    "Category": new_cat, 
+                    "Size": new_size, 
+                    "Description": new_desc, 
+                    "Status": db_status
+                }
+                try:
+                    supabase.table(APP_CONFIG["table_inventory"]).insert(new_item).execute()
+                    desc_log = f" - {new_desc}" if new_desc != "N/A" else ""
+                    log_entry = {"Transaction #": trx_id, "Timestamp": now, "ID": final_id, "Model": new_model, "Change": f"Logged {stock_status}: {new_qty} units ({new_size}{desc_log})", "User": st.session_state.get('user_email', 'Admin')}
+                    supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
+                    st.success(f"✅ {new_model} successfully stored as {stock_status}!")
+                except Exception as e:
+                    st.error(f"Database Error: {e}")
+
+    with tab2:
+        st.markdown("### Process Arrived Freight")
+        df = load_inventory()
+        
+        if not df.empty and 'Qty_On_Order' in df.columns:
+            # Locate all items actively in transit
+            df['Qty_On_Order'] = pd.to_numeric(df['Qty_On_Order'], errors='coerce').fillna(0)
+            inbound_items = df[df['Qty_On_Order'] > 0]
             
-        with col2:
-            new_cat = st.selectbox("Category", APP_CONFIG["categories"])
-            new_size = st.selectbox("Size", ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"])
-            new_desc = st.selectbox("Part Description", ["N/A", "Air Filter", "Oil Filter", "Hydraulic Filter", "Fuel Filter", "Hydraulic Hose", "O-Rings / Seals", "Track Assembly", "Sprocket / Idler", "Teeth / Cutting Edge", "Pins & Bushings", "Electrical Relay / Fuse", "Sensors", "Hardware / Fasteners", "Fluids / Grease", "Other"])
-            new_loc = st.text_input("Location", value="Warehouse")
-            
-        if st.form_submit_button("Commit to Database") and new_id:
-            now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
-            trx_id = f"TRX-{datetime.now().strftime('%f')}" 
-            
-            new_item = {"ID": new_id, "Model": new_model, "Type": new_type, "Qty_On_Hand": int(new_qty), "Location": new_loc, "Category": new_cat, "Size": new_size, "Description": new_desc, "Status": "Available"}
-            try:
-                supabase.table(APP_CONFIG["table_inventory"]).insert(new_item).execute()
-                desc_log = f" - {new_desc}" if new_desc != "N/A" else ""
-                log_entry = {"Transaction #": trx_id, "Timestamp": now, "ID": new_id, "Model": new_model, "Change": f"Added {new_qty} units ({new_size}{desc_log})", "User": "Admin"}
-                supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
-                st.success(f"✅ {new_model} successfully stored!")
-            except Exception as e:
-                st.error(f"Database Error: {e}")
+            if not inbound_items.empty:
+                inbound_items_display = inbound_items.copy()
+                inbound_items_display['display'] = inbound_items_display['ID'] + " | " + inbound_items_display['Model'] + " (On Order: " + inbound_items_display['Qty_On_Order'].astype(int).astype(str) + ")"
+                
+                selected_inbound_str = st.selectbox("Select Arriving Shipment:", inbound_items_display['display'].tolist())
+                
+                if selected_inbound_str:
+                    target_id = selected_inbound_str.split(" | ")[0]
+                    target_item = inbound_items[inbound_items['ID'] == target_id].iloc[0]
+                    max_qty = int(target_item['Qty_On_Order'])
+                    is_machine = target_item['Category'] == 'Machine'
+                    
+                    st.info(f"Receiving: **{target_item['Model']}** | Outstanding Order: **{max_qty}**")
+                    
+                    # Not using a form here so the VIN text boxes can render dynamically
+                    receive_qty = st.number_input("How many units arrived today?", min_value=1, max_value=max_qty, step=1)
+                    
+                    new_vins = []
+                    if is_machine:
+                        st.warning("⚠️ Machines require unique VINs. Please enter the VIN for each arriving unit below:")
+                        for i in range(int(receive_qty)):
+                            vin = st.text_input(f"VIN / Serial Number for Unit {i+1}", key=f"vin_{i}")
+                            new_vins.append(vin)
+                            
+                    if st.button("Process Arrival & Update Ledgers", type="primary"):
+                        now = datetime.now(CLIENT_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                        
+                        if is_machine and any(not v.strip() for v in new_vins):
+                            st.error("❌ All incoming machines must have a valid VIN entered before processing.")
+                        else:
+                            try:
+                                # 1. Update the original placeholder PO record
+                                new_on_order = max_qty - receive_qty
+                                new_po_status = "Received" if new_on_order == 0 else "In Transit"
+                                
+                                supabase.table(APP_CONFIG["table_inventory"]).update({
+                                    "Qty_On_Order": new_on_order,
+                                    "Status": new_po_status
+                                }).eq("ID", target_id).execute()
+                                
+                                # 2. Process the actual stock taking
+                                if is_machine:
+                                    for vin in new_vins:
+                                        machine_item = {
+                                            "ID": vin.strip(), "Model": target_item['Model'], "Type": target_item['Type'], 
+                                            "Qty_On_Hand": 1, "Qty_On_Order": 0, "Location": "Warehouse", 
+                                            "Category": "Machine", "Size": target_item['Size'], 
+                                            "Description": target_item['Description'], "Status": "Available"
+                                        }
+                                        supabase.table(APP_CONFIG["table_inventory"]).insert(machine_item).execute()
+                                    log_change = f"RECEIVED {receive_qty}x {target_item['Model']}. Logged new VINs. Remaining on PO: {new_on_order}"
+                                else:
+                                    current_hand = int(target_item.get('Qty_On_Hand', 0))
+                                    new_hand = current_hand + receive_qty
+                                    
+                                    update_data = {"Qty_On_Hand": new_hand}
+                                    if new_on_order == 0:
+                                        update_data["Status"] = "Available"
+                                        
+                                    supabase.table(APP_CONFIG["table_inventory"]).update(update_data).eq("ID", target_id).execute()
+                                    log_change = f"RECEIVED {receive_qty}x {target_item['Model']}. Transferred to Qty_On_Hand. Remaining on PO: {new_on_order}"
+                                    
+                                log_entry = {"Transaction #": f"RCV-{datetime.now().strftime('%f')}", "Timestamp": now, "ID": target_id, "Model": target_item['Model'], "Change": log_change, "User": st.session_state.get('user_email', 'Admin')}
+                                supabase.table(APP_CONFIG["table_activity"]).insert(log_entry).execute()
+                                
+                                st.success("✅ Arrived stock processed successfully! Ledgers updated.")
+                            except Exception as e:
+                                st.error(f"Database Error: {e}")
+            else:
+                st.info("No items currently marked as 'On Order' in the system.")
+        else:
+            st.info("No order data available.")
 
 # --- PAGE: SELL INVENTORY (WITH AUTO-BUNDLE LOGIC) ---
 elif page == "Sell Inventory":
