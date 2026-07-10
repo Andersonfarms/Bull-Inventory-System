@@ -546,7 +546,7 @@ elif page == "Add New Stock":
                 
             with col2:
                 new_cat = st.selectbox("Category", APP_CONFIG["categories"])
-                new_size = st.selectbox("Size", ["N/A", "8\"", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"])
+                new_size = st.selectbox("Size", ["N/A", "8\"", "10\", "12\"", "18\"", "24\"", "36\"", "40\"", "48\"", "Small", "Medium", "Large"])
                 new_desc = st.selectbox("Part Description", ["N/A", "Air Filter", "Oil Filter", "Hydraulic Filter", "Fuel Filter", "Hydraulic Hose", "O-Rings / Seals", "Track Assembly", "Sprocket / Idler", "Teeth / Cutting Edge", "Pins & Bushings", "Electrical Relay / Fuse", "Sensors", "Hardware / Fasteners", "Fluids / Grease", "Other"])
                 new_loc = st.text_input("Location", value="Warehouse")
                 
